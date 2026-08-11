@@ -15,5 +15,6 @@ public class Product
 
     public ProductCategory? ProductCategory { get; set; }
     public ICollection<StockLevel> StockLevels { get; set; } = new List<StockLevel>();
-    public ICollection<StockMovementItem> StockMovementItems { get; set; } = new List<StockMovementItem>();
+    public ICollection<StockMovementItem> StockMovementItems { get; set; } =
+        new List<StockMovementItem>();
 }
