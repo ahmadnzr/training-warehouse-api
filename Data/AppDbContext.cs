@@ -146,16 +146,25 @@ public class AppDbContext : DbContext
             entity.ToTable("suppliers");
 
             entity.HasKey(supplier => supplier.Id);
+            entity.HasIndex(supplier => supplier.Code).IsUnique();
             entity.HasIndex(supplier => supplier.Name);
             entity.HasIndex(supplier => supplier.Email);
+            entity.HasIndex(supplier => supplier.UserId).IsUnique(); // 1 User hanya boleh untuk 1 Supplier
             entity.HasIndex(supplier => supplier.DeletedAt);
 
+            entity.Property(supplier => supplier.Code).HasMaxLength(50).IsRequired();
             entity.Property(supplier => supplier.Name).HasMaxLength(150).IsRequired();
             entity.Property(supplier => supplier.Phone).HasMaxLength(50);
             entity.Property(supplier => supplier.Email).HasMaxLength(255);
             entity.Property(supplier => supplier.Address).HasMaxLength(500);
             entity.Property(supplier => supplier.IsActive).HasDefaultValue(true);
             entity.Property(supplier => supplier.CreatedAt).IsRequired();
+
+            // Relasi 1-to-1 opsional: Supplier -> User
+            entity.HasOne(supplier => supplier.User)
+                .WithOne()
+                .HasForeignKey<Supplier>(supplier => supplier.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

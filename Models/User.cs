@@ -19,5 +19,6 @@ public enum UserRole
 {
     Admin,
     Supervisor,
-    WarehouseOperator
+    WarehouseOperator,
+    Supplier // Role untuk user login supplier
 }
