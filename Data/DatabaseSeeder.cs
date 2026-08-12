@@ -11,8 +11,52 @@ public static class DatabaseSeeder
         await SeedUsersAsync(dbContext);
         await SeedWarehousesAsync(dbContext);
         await SeedCategoriesAsync(dbContext);
+        await SeedProductsAsync(dbContext);
     }
 
+
+    private static async Task SeedProductsAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.Products.AnyAsync(p => p.DeletedAt == null)) return;
+
+        var now = DateTime.UtcNow;
+
+        var makananCat = await dbContext.Categories.FirstOrDefaultAsync(c => c.Name == "Makanan & Minuman");
+        var elektronikCat = await dbContext.Categories.FirstOrDefaultAsync(c => c.Name == "Elektronik");
+
+        var products = new[]
+        {
+            new Product { Id = Guid.NewGuid(), Sku = "PRD-001", Name = "Indomie Goreng", Unit = "Pcs", Weight = 0.08m, IsActive = true, CreatedAt = now },
+            new Product { Id = Guid.NewGuid(), Sku = "PRD-002", Name = "Kopi Kenangan Mantan", Unit = "Cup", Weight = 0.25m, IsActive = true, CreatedAt = now },
+            new Product { Id = Guid.NewGuid(), Sku = "PRD-003", Name = "Laptop ASUS ROG", Unit = "Unit", Weight = 2.50m, IsActive = true, CreatedAt = now }
+        };
+
+        foreach (var product in products)
+        {
+            dbContext.Products.Add(product);
+
+            if ((product.Sku == "PRD-001" || product.Sku == "PRD-002") && makananCat != null)
+            {
+                dbContext.ProductCategories.Add(new ProductCategory
+                {
+                    ProductId = product.Id,
+                    CategoryId = makananCat.Id,
+                    CreatedAt = now
+                });
+            }
+            else if (product.Sku == "PRD-003" && elektronikCat != null)
+            {
+                dbContext.ProductCategories.Add(new ProductCategory
+                {
+                    ProductId = product.Id,
+                    CategoryId = elektronikCat.Id,
+                    CreatedAt = now
+                });
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
 
     private static async Task SeedCategoriesAsync(AppDbContext dbContext)
     {

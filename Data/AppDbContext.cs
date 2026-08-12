@@ -10,14 +10,9 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
-    public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<Supplier> Suppliers => Set<Supplier>();
-    public DbSet<StockLevel> StockLevels => Set<StockLevel>();
-    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
-    public DbSet<StockMovementItem> StockMovementItems => Set<StockMovementItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,14 +20,9 @@ public class AppDbContext : DbContext
 
         ConfigureUsers(modelBuilder);
         ConfigureWarehouses(modelBuilder);
-        ConfigureWarehouseLocations(modelBuilder);
         ConfigureCategories(modelBuilder);
         ConfigureProductCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
-        ConfigureSuppliers(modelBuilder);
-        ConfigureStockLevels(modelBuilder);
-        ConfigureStockMovements(modelBuilder);
-        ConfigureStockMovementItems(modelBuilder);
     }
 
     private static void ConfigureCategories(ModelBuilder modelBuilder)
@@ -91,30 +81,6 @@ public class AppDbContext : DbContext
         });
     }
 
-    private static void ConfigureWarehouseLocations(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<WarehouseLocation>(entity =>
-        {
-            entity.ToTable("warehouse_locations");
-
-            entity.HasKey(location => location.Id);
-            entity.HasIndex(location => new { location.WarehouseId, location.Code }).IsUnique();
-            entity.HasIndex(location => location.WarehouseId);
-            entity.HasIndex(location => location.DeletedAt);
-
-            entity.Property(location => location.Code).HasMaxLength(50).IsRequired();
-            entity.Property(location => location.Name).HasMaxLength(150).IsRequired();
-            entity.Property(location => location.IsActive).HasDefaultValue(true);
-            entity.Property(location => location.CreatedAt).IsRequired();
-
-            entity
-                .HasOne(location => location.Warehouse)
-                .WithMany(warehouse => warehouse.Locations)
-                .HasForeignKey(location => location.WarehouseId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
-
     private static void ConfigureProductCategories(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProductCategory>(entity =>
@@ -161,150 +127,5 @@ public class AppDbContext : DbContext
         });
     }
 
-    private static void ConfigureSuppliers(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Supplier>(entity =>
-        {
-            entity.ToTable("suppliers");
 
-            entity.HasKey(supplier => supplier.Id);
-            entity.HasIndex(supplier => supplier.Code).IsUnique();
-            entity.HasIndex(supplier => supplier.Name);
-            entity.HasIndex(supplier => supplier.Email);
-            entity.HasIndex(supplier => supplier.UserId).IsUnique(); // 1 User hanya boleh untuk 1 Supplier
-            entity.HasIndex(supplier => supplier.DeletedAt);
-
-            entity.Property(supplier => supplier.Code).HasMaxLength(50).IsRequired();
-            entity.Property(supplier => supplier.Name).HasMaxLength(150).IsRequired();
-            entity.Property(supplier => supplier.Phone).HasMaxLength(50);
-            entity.Property(supplier => supplier.Email).HasMaxLength(255);
-            entity.Property(supplier => supplier.Address).HasMaxLength(500);
-            entity.Property(supplier => supplier.IsActive).HasDefaultValue(true);
-            entity.Property(supplier => supplier.CreatedAt).IsRequired();
-
-            // Relasi 1-to-1 opsional: Supplier -> User
-            entity
-                .HasOne(supplier => supplier.User)
-                .WithOne()
-                .HasForeignKey<Supplier>(supplier => supplier.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
-
-    private static void ConfigureStockLevels(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StockLevel>(entity =>
-        {
-            entity.ToTable("stock_levels");
-
-            entity.HasKey(stockLevel => stockLevel.Id);
-            entity
-                .HasIndex(stockLevel => new
-                {
-                    stockLevel.ProductId,
-                    stockLevel.WarehouseLocationId,
-                })
-                .IsUnique();
-            entity.HasIndex(stockLevel => stockLevel.ProductId);
-            entity.HasIndex(stockLevel => stockLevel.WarehouseLocationId);
-
-            entity.Property(stockLevel => stockLevel.Quantity).HasDefaultValue(0);
-            entity.Property(stockLevel => stockLevel.CreatedAt).IsRequired();
-
-            entity
-                .HasOne(stockLevel => stockLevel.Product)
-                .WithMany(product => product.StockLevels)
-                .HasForeignKey(stockLevel => stockLevel.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity
-                .HasOne(stockLevel => stockLevel.WarehouseLocation)
-                .WithMany(location => location.StockLevels)
-                .HasForeignKey(stockLevel => stockLevel.WarehouseLocationId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
-
-    private static void ConfigureStockMovements(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StockMovement>(entity =>
-        {
-            entity.ToTable("stock_movements");
-
-            entity.HasKey(movement => movement.Id);
-            entity.HasIndex(movement => movement.MovementNumber).IsUnique();
-            entity.HasIndex(movement => movement.Type);
-            entity.HasIndex(movement => movement.Status);
-            entity.HasIndex(movement => movement.SupplierId);
-            entity.HasIndex(movement => movement.CreatedByUserId);
-            entity.HasIndex(movement => movement.CreatedAt);
-            entity.HasIndex(movement => movement.DeletedAt);
-
-            entity.Property(movement => movement.MovementNumber).HasMaxLength(100).IsRequired();
-            entity
-                .Property(movement => movement.Type)
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
-            entity
-                .Property(movement => movement.Status)
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
-            entity.Property(movement => movement.Notes).HasMaxLength(1000);
-            entity.Property(movement => movement.CreatedAt).IsRequired();
-
-            entity
-                .HasOne(movement => movement.Supplier)
-                .WithMany(supplier => supplier.StockMovements)
-                .HasForeignKey(movement => movement.SupplierId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity
-                .HasOne(movement => movement.CreatedByUser)
-                .WithMany(user => user.StockMovements)
-                .HasForeignKey(movement => movement.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
-
-    private static void ConfigureStockMovementItems(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StockMovementItem>(entity =>
-        {
-            entity.ToTable("stock_movement_items");
-
-            entity.HasKey(item => item.Id);
-            entity.HasIndex(item => item.StockMovementId);
-            entity.HasIndex(item => item.ProductId);
-            entity.HasIndex(item => item.SourceLocationId);
-            entity.HasIndex(item => item.DestinationLocationId);
-
-            entity.Property(item => item.Quantity).IsRequired();
-
-            entity
-                .HasOne(item => item.StockMovement)
-                .WithMany(movement => movement.Items)
-                .HasForeignKey(item => item.StockMovementId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity
-                .HasOne(item => item.Product)
-                .WithMany(product => product.StockMovementItems)
-                .HasForeignKey(item => item.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity
-                .HasOne(item => item.SourceLocation)
-                .WithMany(location => location.SourceMovementItems)
-                .HasForeignKey(item => item.SourceLocationId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity
-                .HasOne(item => item.DestinationLocation)
-                .WithMany(location => location.DestinationMovementItems)
-                .HasForeignKey(item => item.DestinationLocationId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
 }

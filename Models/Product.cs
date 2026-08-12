@@ -11,9 +11,5 @@ public class Product
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
-
     public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
-    public ICollection<StockLevel> StockLevels { get; set; } = new List<StockLevel>();
-    public ICollection<StockMovementItem> StockMovementItems { get; set; } =
-        new List<StockMovementItem>();
 }

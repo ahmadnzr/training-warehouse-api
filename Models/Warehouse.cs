@@ -11,6 +11,4 @@ public class Warehouse
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
-
-    public ICollection<WarehouseLocation> Locations { get; set; } = new List<WarehouseLocation>();
 }
