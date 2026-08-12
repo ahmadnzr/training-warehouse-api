@@ -3,7 +3,6 @@ namespace WarehouseWeb.Api.Models;
 public class Product
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid ProductCategoryId { get; set; }
     public string Sku { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
@@ -13,7 +12,7 @@ public class Product
     public DateTime? UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
 
-    public ProductCategory? ProductCategory { get; set; }
+    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
     public ICollection<StockLevel> StockLevels { get; set; } = new List<StockLevel>();
     public ICollection<StockMovementItem> StockMovementItems { get; set; } =
         new List<StockMovementItem>();

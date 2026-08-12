@@ -5,13 +5,13 @@ namespace WarehouseWeb.Api.Data;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options) { }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
@@ -26,12 +26,29 @@ public class AppDbContext : DbContext
         ConfigureUsers(modelBuilder);
         ConfigureWarehouses(modelBuilder);
         ConfigureWarehouseLocations(modelBuilder);
+        ConfigureCategories(modelBuilder);
         ConfigureProductCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
         ConfigureSuppliers(modelBuilder);
         ConfigureStockLevels(modelBuilder);
         ConfigureStockMovements(modelBuilder);
         ConfigureStockMovementItems(modelBuilder);
+    }
+
+    private static void ConfigureCategories(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("categories");
+
+            entity.HasKey(category => category.Id);
+            entity.HasIndex(category => category.Name);
+            entity.HasIndex(category => category.DeletedAt);
+
+            entity.Property(category => category.Name).HasMaxLength(150).IsRequired();
+            entity.Property(category => category.IsActive).HasDefaultValue(true);
+            entity.Property(category => category.CreatedAt).IsRequired();
+        });
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -90,7 +107,8 @@ public class AppDbContext : DbContext
             entity.Property(location => location.IsActive).HasDefaultValue(true);
             entity.Property(location => location.CreatedAt).IsRequired();
 
-            entity.HasOne(location => location.Warehouse)
+            entity
+                .HasOne(location => location.Warehouse)
                 .WithMany(warehouse => warehouse.Locations)
                 .HasForeignKey(location => location.WarehouseId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -103,13 +121,23 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("product_categories");
 
-            entity.HasKey(category => category.Id);
-            entity.HasIndex(category => category.Name);
-            entity.HasIndex(category => category.DeletedAt);
+            // Composite Primary Key
+            entity.HasKey(pc => new { pc.ProductId, pc.CategoryId });
 
-            entity.Property(category => category.Name).HasMaxLength(150).IsRequired();
-            entity.Property(category => category.IsActive).HasDefaultValue(true);
-            entity.Property(category => category.CreatedAt).IsRequired();
+            entity.HasIndex(pc => pc.ProductId);
+            entity.HasIndex(pc => pc.CategoryId);
+
+            entity.Property(pc => pc.CreatedAt).IsRequired();
+
+            entity.HasOne(pc => pc.Product)
+            .WithMany(p => p.ProductCategories)
+            .HasForeignKey(pc => pc.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(pc => pc.Category)
+            .WithMany(c => c.ProductCategories)
+            .HasForeignKey(pc => pc.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
@@ -122,7 +150,6 @@ public class AppDbContext : DbContext
             entity.HasKey(product => product.Id);
             entity.HasIndex(product => product.Sku).IsUnique();
             entity.HasIndex(product => product.Name);
-            entity.HasIndex(product => product.ProductCategoryId);
             entity.HasIndex(product => product.DeletedAt);
 
             entity.Property(product => product.Sku).HasMaxLength(100).IsRequired();
@@ -131,11 +158,6 @@ public class AppDbContext : DbContext
             entity.Property(product => product.Weight).HasPrecision(18, 2);
             entity.Property(product => product.IsActive).HasDefaultValue(true);
             entity.Property(product => product.CreatedAt).IsRequired();
-
-            entity.HasOne(product => product.ProductCategory)
-                .WithMany(category => category.Products)
-                .HasForeignKey(product => product.ProductCategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
@@ -161,7 +183,8 @@ public class AppDbContext : DbContext
             entity.Property(supplier => supplier.CreatedAt).IsRequired();
 
             // Relasi 1-to-1 opsional: Supplier -> User
-            entity.HasOne(supplier => supplier.User)
+            entity
+                .HasOne(supplier => supplier.User)
                 .WithOne()
                 .HasForeignKey<Supplier>(supplier => supplier.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -175,19 +198,27 @@ public class AppDbContext : DbContext
             entity.ToTable("stock_levels");
 
             entity.HasKey(stockLevel => stockLevel.Id);
-            entity.HasIndex(stockLevel => new { stockLevel.ProductId, stockLevel.WarehouseLocationId }).IsUnique();
+            entity
+                .HasIndex(stockLevel => new
+                {
+                    stockLevel.ProductId,
+                    stockLevel.WarehouseLocationId,
+                })
+                .IsUnique();
             entity.HasIndex(stockLevel => stockLevel.ProductId);
             entity.HasIndex(stockLevel => stockLevel.WarehouseLocationId);
 
             entity.Property(stockLevel => stockLevel.Quantity).HasDefaultValue(0);
             entity.Property(stockLevel => stockLevel.CreatedAt).IsRequired();
 
-            entity.HasOne(stockLevel => stockLevel.Product)
+            entity
+                .HasOne(stockLevel => stockLevel.Product)
                 .WithMany(product => product.StockLevels)
                 .HasForeignKey(stockLevel => stockLevel.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(stockLevel => stockLevel.WarehouseLocation)
+            entity
+                .HasOne(stockLevel => stockLevel.WarehouseLocation)
                 .WithMany(location => location.StockLevels)
                 .HasForeignKey(stockLevel => stockLevel.WarehouseLocationId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -210,17 +241,27 @@ public class AppDbContext : DbContext
             entity.HasIndex(movement => movement.DeletedAt);
 
             entity.Property(movement => movement.MovementNumber).HasMaxLength(100).IsRequired();
-            entity.Property(movement => movement.Type).HasConversion<string>().HasMaxLength(50).IsRequired();
-            entity.Property(movement => movement.Status).HasConversion<string>().HasMaxLength(50).IsRequired();
+            entity
+                .Property(movement => movement.Type)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+            entity
+                .Property(movement => movement.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
             entity.Property(movement => movement.Notes).HasMaxLength(1000);
             entity.Property(movement => movement.CreatedAt).IsRequired();
 
-            entity.HasOne(movement => movement.Supplier)
+            entity
+                .HasOne(movement => movement.Supplier)
                 .WithMany(supplier => supplier.StockMovements)
                 .HasForeignKey(movement => movement.SupplierId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(movement => movement.CreatedByUser)
+            entity
+                .HasOne(movement => movement.CreatedByUser)
                 .WithMany(user => user.StockMovements)
                 .HasForeignKey(movement => movement.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -241,22 +282,26 @@ public class AppDbContext : DbContext
 
             entity.Property(item => item.Quantity).IsRequired();
 
-            entity.HasOne(item => item.StockMovement)
+            entity
+                .HasOne(item => item.StockMovement)
                 .WithMany(movement => movement.Items)
                 .HasForeignKey(item => item.StockMovementId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(item => item.Product)
+            entity
+                .HasOne(item => item.Product)
                 .WithMany(product => product.StockMovementItems)
                 .HasForeignKey(item => item.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(item => item.SourceLocation)
+            entity
+                .HasOne(item => item.SourceLocation)
                 .WithMany(location => location.SourceMovementItems)
                 .HasForeignKey(item => item.SourceLocationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(item => item.DestinationLocation)
+            entity
+                .HasOne(item => item.DestinationLocation)
                 .WithMany(location => location.DestinationMovementItems)
                 .HasForeignKey(item => item.DestinationLocationId)
                 .OnDelete(DeleteBehavior.Restrict);
