@@ -106,6 +106,8 @@ builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
+builder.Services.AddScoped<IWarehouseLocationRepository, WarehouseLocationRepository>();
+builder.Services.AddScoped<IWarehouseLocationService, WarehouseLocationService>();
 
 var app = builder.Build();
 

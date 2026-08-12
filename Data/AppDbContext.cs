@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +24,7 @@ public class AppDbContext : DbContext
         ConfigureCategories(modelBuilder);
         ConfigureProductCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
+        ConfigureWarehouseLocations(modelBuilder);
     }
 
     private static void ConfigureCategories(ModelBuilder modelBuilder)
@@ -78,6 +80,25 @@ public class AppDbContext : DbContext
             entity.Property(warehouse => warehouse.City).HasMaxLength(100);
             entity.Property(warehouse => warehouse.IsActive).HasDefaultValue(true);
             entity.Property(warehouse => warehouse.CreatedAt).IsRequired();
+        });
+    }
+
+    private static void ConfigureWarehouseLocations(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WarehouseLocation>(entity =>
+        {
+            entity.ToTable("warehouse_locations");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.WarehouseId, e.Code })
+                  .IsUnique()
+                  .HasFilter("[DeletedAt] IS NULL");
+
+            entity.HasOne(wl => wl.Warehouse)
+                  .WithMany(w => w.Locations)
+                  .HasForeignKey(wl => wl.WarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
