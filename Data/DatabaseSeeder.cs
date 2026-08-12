@@ -10,8 +10,41 @@ public static class DatabaseSeeder
     {
         await SeedUsersAsync(dbContext);
         await SeedWarehousesAsync(dbContext);
+        await SeedCategoriesAsync(dbContext);
     }
 
+
+    private static async Task SeedCategoriesAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.Categories.AnyAsync(c => c.DeletedAt == null))
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+
+        var categories = new[]
+        {
+        new Category { Name = "Makanan & Minuman", IsActive = true, CreatedAt = now },
+        new Category { Name = "Elektronik", IsActive = true, CreatedAt = now },
+        new Category { Name = "Pakaian & Tekstil", IsActive = true, CreatedAt = now },
+        new Category { Name = "Alat Tulis Kantor", IsActive = true, CreatedAt = now },
+        new Category { Name = "Perlengkapan Rumah Tangga", IsActive = true, CreatedAt = now }
+    };
+
+        foreach (var category in categories)
+        {
+            var exists = await dbContext.Categories
+                .AnyAsync(c => c.Name == category.Name && c.DeletedAt == null);
+
+            if (!exists)
+            {
+                dbContext.Categories.Add(category);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
     private static async Task SeedWarehousesAsync(AppDbContext dbContext)
     {
         if (await dbContext.Warehouses.AnyAsync(w => w.DeletedAt == null))
