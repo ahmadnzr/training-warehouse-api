@@ -135,7 +135,7 @@ public class AppDbContext : DbContext
             entity.ToTable("products");
 
             entity.HasKey(product => product.Id);
-            entity.HasIndex(product => product.Sku).IsUnique();
+            entity.HasIndex(product => product.Sku).IsUnique().HasFilter("[DeletedAt] IS NULL");
             entity.HasIndex(product => product.Name);
             entity.HasIndex(product => product.DeletedAt);
 
