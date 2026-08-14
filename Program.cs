@@ -110,6 +110,8 @@ builder.Services.AddScoped<IWarehouseLocationRepository, WarehouseLocationReposi
 builder.Services.AddScoped<IWarehouseLocationService, WarehouseLocationService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 
 var app = builder.Build();
 

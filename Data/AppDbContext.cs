@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,7 +26,32 @@ public class AppDbContext : DbContext
         ConfigureProductCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
         ConfigureWarehouseLocations(modelBuilder);
+        ConfigureSuppliers(modelBuilder);
     }
+
+    private static void ConfigureSuppliers(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.ToTable("suppliers");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.Address).HasMaxLength(500);
+
+            entity.HasIndex(e => e.Code)
+                  .IsUnique()
+                  .HasFilter("[DeletedAt] IS NULL");
+
+            entity.HasIndex(e => e.UserId)
+                  .IsUnique()
+                  .HasFilter("[UserId] IS NOT NULL AND [DeletedAt] IS NULL");
+        });
+    }
+
 
     private static void ConfigureCategories(ModelBuilder modelBuilder)
     {
