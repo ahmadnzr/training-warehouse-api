@@ -112,6 +112,10 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IStockLevelRepository, StockLevelRepository>();
+builder.Services.AddScoped<IStockLevelService, StockLevelService>();
+builder.Services.AddScoped<IStockMovementRepository, StockMovementRepository>();
+builder.Services.AddScoped<IStockMovementService, StockMovementService>();
 
 var app = builder.Build();
 

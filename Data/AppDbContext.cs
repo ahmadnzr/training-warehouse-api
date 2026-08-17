@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WarehouseWeb.Api.Models;
+using WarehouseWeb.Api.Models.Enums;
 
 namespace WarehouseWeb.Api.Data;
 
@@ -15,6 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<StockLevel> StockLevels => Set<StockLevel>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<StockMovementItem> StockMovementItems => Set<StockMovementItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +31,118 @@ public class AppDbContext : DbContext
         ConfigureProducts(modelBuilder);
         ConfigureWarehouseLocations(modelBuilder);
         ConfigureSuppliers(modelBuilder);
+        ConfigureStockLevels(modelBuilder);
+        ConfigureStockMovements(modelBuilder);
+        ConfigureStockMovementItems(modelBuilder);
+
+    }
+
+
+    private static void ConfigureStockLevels(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StockLevel>(entity =>
+        {
+            entity.ToTable("stock_levels");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Quantity).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.ProductId, e.WarehouseLocationId }).IsUnique();
+            entity.HasIndex(e => e.ProductId);
+            entity.HasIndex(e => e.WarehouseLocationId);
+
+            entity.HasOne(e => e.Product)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.WarehouseLocation)
+                  .WithMany()
+                  .HasForeignKey(e => e.WarehouseLocationId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureStockMovements(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StockMovement>(entity =>
+        {
+            entity.ToTable("stock_movements");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.MovementNumber).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.CreatedAt).IsRequired();
+
+            entity.Property(e => e.Type)
+                  .HasConversion(
+                      v => v.ToString().ToLowerInvariant(),
+                      v => Enum.Parse<StockMovementType>(v, true))
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.Property(e => e.Status)
+                  .HasConversion(
+                      v => v.ToString().ToLowerInvariant(),
+                      v => Enum.Parse<StockMovementStatus>(v, true))
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.HasIndex(e => e.MovementNumber).IsUnique();
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.SupplierId);
+            entity.HasIndex(e => e.CreatedByUserId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.DeletedAt);
+
+            entity.HasOne(e => e.Supplier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SupplierId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureStockMovementItems(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StockMovementItem>(entity =>
+        {
+            entity.ToTable("stock_movement_items");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Quantity).IsRequired();
+
+            entity.HasIndex(e => e.StockMovementId);
+            entity.HasIndex(e => e.ProductId);
+            entity.HasIndex(e => e.SourceLocationId);
+            entity.HasIndex(e => e.DestinationLocationId);
+
+            entity.HasOne(e => e.StockMovement)
+                  .WithMany(m => m.Items)
+                  .HasForeignKey(e => e.StockMovementId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SourceLocation)
+                  .WithMany()
+                  .HasForeignKey(e => e.SourceLocationId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DestinationLocation)
+                  .WithMany()
+                  .HasForeignKey(e => e.DestinationLocationId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureSuppliers(ModelBuilder modelBuilder)
