@@ -13,6 +13,18 @@ namespace WarehouseWeb.Api.Services
         private readonly IWarehouseLocationRepository _locationRepository;
         private readonly ISupplierRepository _supplierRepository;
 
+        private static StockMovementType? ParseType(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            return Enum.TryParse<StockMovementType>(value, ignoreCase: true, out var type) ? type : null;
+        }
+
+        private static StockMovementStatus? ParseStatus(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            return Enum.TryParse<StockMovementStatus>(value, ignoreCase: true, out var status) ? status : null;
+        }
+
         public StockMovementService(
             IStockMovementRepository movementRepository,
             IProductRepository productRepository,
@@ -23,13 +35,6 @@ namespace WarehouseWeb.Api.Services
             _productRepository = productRepository;
             _locationRepository = locationRepository;
             _supplierRepository = supplierRepository;
-        }
-
-        public async Task<StockMovementDto> GetByIdAsync(Guid id)
-        {
-            var movement = await _movementRepository.FindByIdAsync(id);
-            if (movement == null) throw new NotFoundException("Movement not found");
-            return MapToDto(movement);
         }
 
         public async Task<StockMovementDto> CreateInboundDraftAsync(CreateInboundMovementRequestDto request, Guid userId)
@@ -180,6 +185,158 @@ namespace WarehouseWeb.Api.Services
                     Quantity = i.Quantity
                 }).ToList()
             };
+        }
+
+        public async Task<PaginatedResponse<StockMovementDto>> ListAsync(StockMovementQueryRequest request, Guid currentUserId, string currentUserRole)
+        {
+            request.Validate();
+
+            var type = ParseType(request.Type);
+            var status = ParseStatus(request.Status);
+
+            if (!string.IsNullOrWhiteSpace(request.Type) && type == null)
+                throw new UnprocessableException("Invalid movement type filter");
+            if (!string.IsNullOrWhiteSpace(request.Status) && status == null)
+                throw new UnprocessableException("Invalid movement status filter");
+
+            // admin & supervisor: lihat semua
+            // warehouse_operator: hanya miliknya
+            Guid? ownerFilter = currentUserRole == "warehouse_operator" ? currentUserId : null;
+
+            var items = await _movementRepository.ListAsync(
+                type,
+                status,
+                request.ProductId,
+                request.DateFrom,
+                request.DateTo,
+                ownerFilter,
+                request.GetOffset(),
+                request.PerPage,
+                request.Sort,
+                request.Order);
+
+            var total = await _movementRepository.CountAsync(
+                type,
+                status,
+                request.ProductId,
+                request.DateFrom,
+                request.DateTo,
+                ownerFilter);
+
+            return new PaginatedResponse<StockMovementDto>
+            {
+                Items = items.Select(MapToDto).ToList(),
+                Meta = new PaginationMeta
+                {
+                    Page = request.Page,
+                    PerPage = request.PerPage,
+                    Total = total,
+                    TotalPage = (int)Math.Ceiling(total / (double)request.PerPage)
+                }
+            };
+        }
+
+        public async Task<StockMovementDto> GetByIdAsync(Guid id, Guid currentUserId, string currentUserRole)
+        {
+
+            var movement = await _movementRepository.FindByIdAsync(id);
+            if (movement == null) throw new NotFoundException("Movement not found");
+
+            if (currentUserRole == "warehouse_operator" && movement.CreatedByUserId != currentUserId)
+                throw new ForbiddenException("You can only view your own movements");
+
+            return MapToDto(movement);
+        }
+
+        public async Task<StockMovementDto> CompleteAsync(Guid id)
+        {
+            var movement = await _movementRepository.FindByIdAsync(id);
+            if (movement == null) throw new NotFoundException("Movement not found");
+
+            if (movement.Status != StockMovementStatus.Draft)
+                throw new UnprocessableException("Only draft movement can be completed");
+
+            await using var transaction = await _movementRepository.BeginTransactionAsync();
+            try
+            {
+                foreach (var item in movement.Items)
+                {
+                    if (movement.Type is StockMovementType.Outbound or StockMovementType.Transfer)
+                    {
+                        var sourceId = item.SourceLocationId
+                            ?? throw new UnprocessableException("Source location is required");
+
+                        var sourceLevel = await _movementRepository.GetStockLevelAsync(item.ProductId, sourceId);
+                        if (sourceLevel == null || sourceLevel.Quantity < item.Quantity)
+                        {
+                            throw new UnprocessableException(
+                                $"Insufficient stock for product {item.ProductId} at location {sourceId}");
+                        }
+
+                        sourceLevel.Quantity -= item.Quantity;
+                        sourceLevel.UpdatedAt = DateTime.UtcNow;
+                        await _movementRepository.UpdateStockLevelAsync(sourceLevel);
+                    }
+
+                    if (movement.Type is StockMovementType.Inbound or StockMovementType.Transfer)
+                    {
+                        var destId = item.DestinationLocationId
+                            ?? throw new UnprocessableException("Destination location is required");
+
+                        var destLevel = await _movementRepository.GetStockLevelAsync(item.ProductId, destId);
+                        if (destLevel == null)
+                        {
+                            destLevel = new StockLevel
+                            {
+                                ProductId = item.ProductId,
+                                WarehouseLocationId = destId,
+                                Quantity = item.Quantity,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            await _movementRepository.AddStockLevelAsync(destLevel);
+                        }
+                        else
+                        {
+                            destLevel.Quantity += item.Quantity;
+                            destLevel.UpdatedAt = DateTime.UtcNow;
+                            await _movementRepository.UpdateStockLevelAsync(destLevel);
+                        }
+                    }
+                }
+
+                movement.Status = StockMovementStatus.Completed;
+                movement.CompletedAt = DateTime.UtcNow;
+                movement.UpdatedAt = DateTime.UtcNow;
+
+                await _movementRepository.UpdateAsync(movement);
+                await transaction.CommitAsync();
+
+                return MapToDto(movement);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<StockMovementDto> CancelAsync(Guid id, Guid currentUserId, string currentUserRole)
+        {
+            var movement = await _movementRepository.FindByIdAsync(id);
+            if (movement == null) throw new NotFoundException("Movement not found");
+
+            if (movement.Status != StockMovementStatus.Draft)
+                throw new UnprocessableException("Only draft movement can be cancelled");
+
+            if (currentUserRole == "warehouse_operator" && movement.CreatedByUserId != currentUserId)
+                throw new ForbiddenException("You can only cancel your own movements");
+
+            movement.Status = StockMovementStatus.Cancelled;
+            movement.CancelledAt = DateTime.UtcNow;
+            movement.UpdatedAt = DateTime.UtcNow;
+
+            await _movementRepository.UpdateAsync(movement);
+            return MapToDto(movement);
         }
     }
 }

@@ -4,6 +4,6 @@ namespace WarehouseWeb.Api.Models.Enums
     {
         Draft,
         Completed,
-        Canceled
+        Cancelled
     }
 }
