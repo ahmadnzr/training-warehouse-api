@@ -19,6 +19,9 @@ public class AppDbContext : DbContext
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockMovementItem> StockMovementItems => Set<StockMovementItem>();
+    public DbSet<JobExecutionLog> JobExecutionLogs => Set<JobExecutionLog>();
+    public DbSet<DailyStockReport> DailyStockReports => Set<DailyStockReport>();
+    public DbSet<DailyStockReportItem> DailyStockReportItems => Set<DailyStockReportItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,9 +37,78 @@ public class AppDbContext : DbContext
         ConfigureStockLevels(modelBuilder);
         ConfigureStockMovements(modelBuilder);
         ConfigureStockMovementItems(modelBuilder);
-
+        ConfigureJobExecutionLogs(modelBuilder);
+        ConfigureDailyStockReports(modelBuilder);
+        ConfigureDailyStockReportItems(modelBuilder);
     }
 
+    private static void ConfigureJobExecutionLogs(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<JobExecutionLog>(entity =>
+        {
+            entity.ToTable("job_execution_logs");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.JobName).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.Property(e => e.StartedAt).IsRequired();
+
+            entity.Property(e => e.Status)
+                  .HasConversion(
+                      v => v.ToString().ToLowerInvariant(),
+                      v => Enum.Parse<JobExecutionStatus>(v, true))
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.HasIndex(e => e.JobName);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.StartedAt);
+        });
+    }
+
+    private static void ConfigureDailyStockReports(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DailyStockReport>(entity =>
+        {
+            entity.ToTable("daily_stock_reports");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ReportDate).HasColumnType("date").IsRequired();
+            entity.Property(e => e.GeneratedAt).IsRequired();
+
+            entity.HasIndex(e => e.ReportDate).IsUnique();
+            entity.HasIndex(e => e.JobExecutionLogId);
+
+            entity.HasOne(e => e.JobExecutionLog)
+                  .WithMany()
+                  .HasForeignKey(e => e.JobExecutionLogId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureDailyStockReportItems(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DailyStockReportItem>(entity =>
+        {
+            entity.ToTable("daily_stock_report_items");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.TotalQuantity).IsRequired();
+
+            entity.HasIndex(e => new { e.DailyStockReportId, e.ProductId }).IsUnique();
+            entity.HasIndex(e => e.ProductId);
+
+            entity.HasOne(e => e.DailyStockReport)
+                  .WithMany(r => r.Items)
+                  .HasForeignKey(e => e.DailyStockReportId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
 
     private static void ConfigureStockLevels(ModelBuilder modelBuilder)
     {

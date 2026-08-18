@@ -116,6 +116,9 @@ builder.Services.AddScoped<IStockLevelRepository, StockLevelRepository>();
 builder.Services.AddScoped<IStockLevelService, StockLevelService>();
 builder.Services.AddScoped<IStockMovementRepository, StockMovementRepository>();
 builder.Services.AddScoped<IStockMovementService, StockMovementService>();
+builder.Services.AddScoped<IJobExecutionLogRepository, JobExecutionLogRepository>();
+builder.Services.AddScoped<IDailyStockReportRepository, DailyStockReportRepository>();
+builder.Services.AddScoped<IDailyStockReportService, DailyStockReportService>();
 
 var app = builder.Build();
 
