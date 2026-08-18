@@ -89,7 +89,7 @@ DatabaseSeeder akan membuat 3 user default dengan password `Admin123!`:
 - `GET /api/v1/jobs/executions` - Lihat riwayat jalannya Job
 - `GET /api/v1/reports/daily-stock` - Lihat Laporan Stok Harian
 
-> *Untuk detail lengkap body request dan response, silakan import **`docs/WarehouseWeb_API_Collection.json`** ke aplikasi Postman.*
+> *Untuk detail lengkap body request dan response, silakan import **`docs/WarehouseWeb_API_Collection.json`** beserta environment-nya **`docs/WarehouseWeb_API_Environment.json`** ke aplikasi Postman.*
 
 ## Project Structure
 
