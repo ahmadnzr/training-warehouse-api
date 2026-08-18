@@ -12,6 +12,7 @@ namespace WarehouseWeb.Api.Services
         private readonly IProductRepository _productRepository;
         private readonly IWarehouseLocationRepository _locationRepository;
         private readonly ISupplierRepository _supplierRepository;
+        private readonly INotificationService _notificationService;
 
         private static StockMovementType? ParseType(string? value)
         {
@@ -29,12 +30,14 @@ namespace WarehouseWeb.Api.Services
             IStockMovementRepository movementRepository,
             IProductRepository productRepository,
             IWarehouseLocationRepository locationRepository,
-            ISupplierRepository supplierRepository)
+            ISupplierRepository supplierRepository,
+            INotificationService notificationService)
         {
             _movementRepository = movementRepository;
             _productRepository = productRepository;
             _locationRepository = locationRepository;
             _supplierRepository = supplierRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<StockMovementDto> CreateInboundDraftAsync(CreateInboundMovementRequestDto request, Guid userId)
@@ -310,6 +313,11 @@ namespace WarehouseWeb.Api.Services
 
                 await _movementRepository.UpdateAsync(movement);
                 await transaction.CommitAsync();
+
+                await _notificationService.NotifySupervisorsMovementCompletedAsync(
+                    movement.Id,
+                    movement.MovementNumber,
+                    movement.Type.ToString().ToLowerInvariant());
 
                 return MapToDto(movement);
             }

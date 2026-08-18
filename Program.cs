@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Coravel;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using WarehouseWeb.Api.Common;
 using WarehouseWeb.Api.Data;
+using WarehouseWeb.Api.Jobs;
 using WarehouseWeb.Api.Middleware;
 using WarehouseWeb.Api.Repositories;
 using WarehouseWeb.Api.Services;
@@ -119,8 +121,27 @@ builder.Services.AddScoped<IStockMovementService, StockMovementService>();
 builder.Services.AddScoped<IJobExecutionLogRepository, JobExecutionLogRepository>();
 builder.Services.AddScoped<IDailyStockReportRepository, DailyStockReportRepository>();
 builder.Services.AddScoped<IDailyStockReportService, DailyStockReportService>();
+builder.Services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddScheduler();
+// Kalau pakai queue notification:
+builder.Services.AddQueue();
+
+builder.Services.AddTransient<DailyStockReportJob>();
+// builder.Services.AddTransient<MovementCompletedNotificationJob>(); // section 6
 
 var app = builder.Build();
+
+app.Services.UseScheduler(scheduler =>
+{
+    scheduler
+        .OnWorker("ReportWorker")
+        .Schedule<DailyStockReportJob>()
+        .DailyAtHour(0)          // 00:00
+.Zoned(TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta"));
+});
+
 
 using (var scope = app.Services.CreateScope())
 {

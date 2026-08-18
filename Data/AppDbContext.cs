@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<JobExecutionLog> JobExecutionLogs => Set<JobExecutionLog>();
     public DbSet<DailyStockReport> DailyStockReports => Set<DailyStockReport>();
     public DbSet<DailyStockReportItem> DailyStockReportItems => Set<DailyStockReportItem>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,7 @@ public class AppDbContext : DbContext
         ConfigureJobExecutionLogs(modelBuilder);
         ConfigureDailyStockReports(modelBuilder);
         ConfigureDailyStockReportItems(modelBuilder);
+        ConfigureNotificationLogs(modelBuilder);
     }
 
     private static void ConfigureJobExecutionLogs(ModelBuilder modelBuilder)
@@ -362,5 +364,19 @@ public class AppDbContext : DbContext
         });
     }
 
-
+    private static void ConfigureNotificationLogs(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<NotificationLog>(entity =>
+        {
+            entity.ToTable("notification_logs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status)
+                  .HasConversion(
+                      v => v.ToString().ToLowerInvariant(),
+                      v => Enum.Parse<NotificationStatus>(v, true))
+                  .HasMaxLength(50)
+                  .IsRequired();
+        });
+    }
 }
+
