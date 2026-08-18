@@ -53,13 +53,43 @@ DatabaseSeeder akan membuat 3 user default dengan password `Admin123!`:
 - `POST /api/v1/auth/login` - Login dan dapatkan JWT token
 - `GET /api/v1/auth/me` - Dapatkan info user yang login
 
-### Users (admin only)
+### Users (Admin Only)
 
 - `GET /api/v1/users` - List users dengan pagination
 - `GET /api/v1/users/{id}` - Dapatkan user by ID
 - `PATCH /api/v1/users/{id}/activate` - Aktifkan user
 - `PATCH /api/v1/users/{id}/deactivate` - Non-aktifkan user
 - `PATCH /api/v1/users/{id}/role` - Ganti role user
+
+### Master Data (Admin & Supervisor)
+
+- `GET/POST/PUT/DELETE /api/v1/warehouses` - Kelola Master Gudang
+- `GET/POST/PUT/DELETE /api/v1/categories` - Kelola Master Kategori
+- `GET/POST/PUT/DELETE /api/v1/products` - Kelola Master Produk
+- `GET/POST/PUT/DELETE /api/v1/suppliers` - Kelola Master Supplier
+- `GET/POST/PUT/DELETE /api/v1/warehouses/{id}/locations` - Kelola Lokasi/Rak Gudang
+
+### Stock Movements (Operator & Supervisor)
+
+- `GET /api/v1/stock-movements` - List riwayat pergerakan stok
+- `GET /api/v1/stock-movements/{id}` - Detail pergerakan stok
+- `POST /api/v1/stock-movements/inbound` - Buat draft Inbound
+- `POST /api/v1/stock-movements/outbound` - Buat draft Outbound
+- `POST /api/v1/stock-movements/transfer` - Buat draft Transfer
+- `POST /api/v1/stock-movements/{id}/complete` - Selesaikan transaksi stok
+- `POST /api/v1/stock-movements/{id}/cancel` - Batalkan transaksi stok
+
+### Stock Levels
+
+- `GET /api/v1/stock-levels` - Lihat ketersediaan stok fisik saat ini
+
+### Jobs & Reports
+
+- `POST /api/v1/jobs/daily-stock-report/run` - Jalankan sinkronisasi laporan harian
+- `GET /api/v1/jobs/executions` - Lihat riwayat jalannya Job
+- `GET /api/v1/reports/daily-stock` - Lihat Laporan Stok Harian
+
+> *Untuk detail lengkap body request dan response, silakan import **`docs/WarehouseWeb_API_Collection.json`** ke aplikasi Postman.*
 
 ## Project Structure
 
