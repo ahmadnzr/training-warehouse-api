@@ -1,0 +1,56 @@
+{
+  "id": "warehouseweb-env-master",
+  "name": "WarehouseWeb API - General Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5123",
+      "enabled": true
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "jwt_token_supervisor",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "jwt_token_operator",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "warehouse_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "product_category_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "location_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "product_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "supplier_id",
+      "value": "",
+      "enabled": true
+    }
+  ]
+}
