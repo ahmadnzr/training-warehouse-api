@@ -10,8 +10,12 @@ public static class DatabaseSeeder
     {
         await SeedUsersAsync(dbContext);
         await SeedWarehousesAsync(dbContext);
+        await SeedWarehouseLocationsAsync(dbContext);
         await SeedCategoriesAsync(dbContext);
         await SeedProductsAsync(dbContext);
+        await SeedSuppliersAsync(dbContext);
+        await SeedStockLevelsAsync(dbContext);
+        await SeedStockMovementsAsync(dbContext);
     }
 
 
@@ -176,6 +180,97 @@ public static class DatabaseSeeder
             }
         }
 
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task SeedWarehouseLocationsAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.WarehouseLocations.AnyAsync()) return;
+
+        var warehouse = await dbContext.Warehouses.FirstOrDefaultAsync(w => w.Code == "WH-JKT");
+        if (warehouse == null) return;
+
+        var now = DateTime.UtcNow;
+        var locations = new[]
+        {
+            new WarehouseLocation { Code = "A-01", Name = "Rak A-01", WarehouseId = warehouse.Id, IsActive = true, CreatedAt = now },
+            new WarehouseLocation { Code = "A-02", Name = "Rak A-02", WarehouseId = warehouse.Id, IsActive = true, CreatedAt = now },
+            new WarehouseLocation { Code = "B-01", Name = "Rak B-01", WarehouseId = warehouse.Id, IsActive = true, CreatedAt = now }
+        };
+        dbContext.WarehouseLocations.AddRange(locations);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task SeedSuppliersAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.Suppliers.AnyAsync()) return;
+
+        var now = DateTime.UtcNow;
+        var suppliers = new[]
+        {
+            new Supplier { Code = "SPL-001", Name = "PT Indofood Sukses Makmur", Phone = "021-123456", Email = "contact@indofood.com", Address = "Jakarta", CreatedAt = now },
+            new Supplier { Code = "SPL-002", Name = "PT Kenangan Pasti", Phone = "021-654321", Email = "supply@kopikenangan.com", Address = "Jakarta", CreatedAt = now }
+        };
+        dbContext.Suppliers.AddRange(suppliers);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task SeedStockLevelsAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.StockLevels.AnyAsync()) return;
+
+        var prd1 = await dbContext.Products.FirstOrDefaultAsync(p => p.Sku == "PRD-001");
+        var prd2 = await dbContext.Products.FirstOrDefaultAsync(p => p.Sku == "PRD-002");
+        var locA01 = await dbContext.WarehouseLocations.FirstOrDefaultAsync(l => l.Code == "A-01");
+        var locB01 = await dbContext.WarehouseLocations.FirstOrDefaultAsync(l => l.Code == "B-01");
+
+        if (prd1 == null || prd2 == null || locA01 == null || locB01 == null) return;
+
+        var now = DateTime.UtcNow;
+        var stocks = new[]
+        {
+            new StockLevel { ProductId = prd1.Id, WarehouseLocationId = locA01.Id, Quantity = 150, CreatedAt = now },
+            new StockLevel { ProductId = prd2.Id, WarehouseLocationId = locB01.Id, Quantity = 50, CreatedAt = now }
+        };
+        dbContext.StockLevels.AddRange(stocks);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task SeedStockMovementsAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.StockMovements.AnyAsync()) return;
+
+        var prd1 = await dbContext.Products.FirstOrDefaultAsync(p => p.Sku == "PRD-001");
+        var locA01 = await dbContext.WarehouseLocations.FirstOrDefaultAsync(l => l.Code == "A-01");
+        var spl1 = await dbContext.Suppliers.FirstOrDefaultAsync(s => s.Code == "SPL-001");
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == "operator@example.com");
+
+        if (prd1 == null || locA01 == null || spl1 == null || user == null) return;
+
+        var now = DateTime.UtcNow;
+
+        var movement = new StockMovement
+        {
+            MovementNumber = $"IN-{now:yyyyMMddHHmmss}-SEED",
+            Type = WarehouseWeb.Api.Models.Enums.StockMovementType.Inbound,
+            Status = WarehouseWeb.Api.Models.Enums.StockMovementStatus.Completed,
+            SupplierId = spl1.Id,
+            Notes = "Seeded Initial Stock",
+            CreatedByUserId = user.Id,
+            CreatedAt = now,
+            CompletedAt = now,
+            Items = new List<StockMovementItem>
+            {
+                new StockMovementItem
+                {
+                    ProductId = prd1.Id,
+                    DestinationLocationId = locA01.Id,
+                    Quantity = 150
+                }
+            }
+        };
+
+        dbContext.StockMovements.Add(movement);
         await dbContext.SaveChangesAsync();
     }
 }
