@@ -56,7 +56,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
         var errors = context.ModelState
             .Where(kv => kv.Value?.Errors.Count > 0)
             .Select(kv => new ValidationError(
-                kv.Key.ToLowerInvariant(),
+                JsonNamingPolicy.SnakeCaseLower.ConvertName(kv.Key),
                 kv.Value!.Errors.Select(e => e.ErrorMessage).ToList()))
             .ToList();
 
