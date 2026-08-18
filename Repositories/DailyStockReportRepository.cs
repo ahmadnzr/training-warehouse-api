@@ -67,7 +67,8 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task UpdateAsync(DailyStockReport report)
         {
-            _dbContext.DailyStockReports.Update(report);
+            // Do not call .Update() because the entity is already tracked,
+            // and .Update() forces all child entities to Modified (causing concurrency issues on new items).
             await _dbContext.SaveChangesAsync();
         }
 
