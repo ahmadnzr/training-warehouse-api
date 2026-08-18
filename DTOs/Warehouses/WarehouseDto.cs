@@ -10,4 +10,5 @@ public class WarehouseDto
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public int TotalLocations { get; set; }
 }

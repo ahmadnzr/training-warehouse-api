@@ -16,6 +16,7 @@ public class WarehouseRepository : IWarehouseRepository
     public async Task<Warehouse?> FindByIdAsync(Guid id)
     {
         return await _dbContext.Warehouses
+            .Include(w => w.Locations.Where(l => l.DeletedAt == null))
             .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null);
     }
 
@@ -75,7 +76,11 @@ public class WarehouseRepository : IWarehouseRepository
             _ => isAsc ? query.OrderBy(w => w.UpdatedAt) : query.OrderByDescending(w => w.UpdatedAt)
         };
 
-        return await query.Skip(skip).Take(take).ToListAsync();
+        return await query
+            .Include(w => w.Locations.Where(l => l.DeletedAt == null))
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
     }
 
     public async Task<int> CountAsync(string? search)

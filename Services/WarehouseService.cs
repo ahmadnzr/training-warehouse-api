@@ -25,7 +25,8 @@ public class WarehouseService : IWarehouseService
             City = warehouse.City,
             IsActive = warehouse.IsActive,
             CreatedAt = warehouse.CreatedAt,
-            UpdatedAt = warehouse.UpdatedAt
+            UpdatedAt = warehouse.UpdatedAt,
+            TotalLocations = warehouse.Locations?.Count ?? 0
         };
     }
 

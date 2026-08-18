@@ -312,12 +312,13 @@ namespace WarehouseWeb.Api.Services
                 movement.UpdatedAt = DateTime.UtcNow;
 
                 await _movementRepository.UpdateAsync(movement);
-                await transaction.CommitAsync();
 
                 await _notificationService.NotifySupervisorsMovementCompletedAsync(
                     movement.Id,
                     movement.MovementNumber,
                     movement.Type.ToString().ToLowerInvariant());
+
+                await transaction.CommitAsync();
 
                 return MapToDto(movement);
             }
