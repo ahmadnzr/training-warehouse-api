@@ -19,6 +19,7 @@ namespace WarehouseWeb.Api.Repositories
 
         Task AddAsync(DailyStockReport report);
         Task UpdateAsync(DailyStockReport report);
+        Task DeleteAsync(DailyStockReport report);
 
         /// <summary>
         /// Aggregate live stock: product_id + SUM(quantity) across all locations.

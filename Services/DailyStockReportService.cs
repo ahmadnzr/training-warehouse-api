@@ -73,37 +73,23 @@ namespace WarehouseWeb.Api.Services
                 var aggregates = await _reportRepository.AggregateStockByProductAsync();
 
                 var report = await _reportRepository.FindByDateWithItemsAsync(date);
-                if (report == null)
+                if (report != null)
                 {
-                    report = new DailyStockReport
-                    {
-                        ReportDate = date,
-                        GeneratedAt = DateTime.UtcNow,
-                        JobExecutionLogId = jobLog.Id,
-                        Items = aggregates.Select(a => new DailyStockReportItem
-                        {
-                            ProductId = a.ProductId,
-                            TotalQuantity = a.TotalQuantity
-                        }).ToList()
-                    };
-                    await _reportRepository.AddAsync(report);
+                    await _reportRepository.DeleteAsync(report);
                 }
-                else
-                {
-                    report.Items.Clear();
-                    foreach (var a in aggregates)
-                    {
-                        report.Items.Add(new DailyStockReportItem
-                        {
-                            ProductId = a.ProductId,
-                            TotalQuantity = a.TotalQuantity
-                        });
-                    }
 
-                    report.GeneratedAt = DateTime.UtcNow;
-                    report.JobExecutionLogId = jobLog.Id;
-                    await _reportRepository.UpdateAsync(report);
-                }
+                report = new DailyStockReport
+                {
+                    ReportDate = date,
+                    GeneratedAt = DateTime.UtcNow,
+                    JobExecutionLogId = jobLog.Id,
+                    Items = aggregates.Select(a => new DailyStockReportItem
+                    {
+                        ProductId = a.ProductId,
+                        TotalQuantity = a.TotalQuantity
+                    }).ToList()
+                };
+                await _reportRepository.AddAsync(report);
 
                 jobLog.Status = JobExecutionStatus.Succeeded;
                 jobLog.FinishedAt = DateTime.UtcNow;

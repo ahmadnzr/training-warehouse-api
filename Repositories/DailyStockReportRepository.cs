@@ -72,6 +72,12 @@ namespace WarehouseWeb.Api.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task DeleteAsync(DailyStockReport report)
+        {
+            _dbContext.DailyStockReports.Remove(report);
+            await _dbContext.SaveChangesAsync();
+        }
+
         public async Task<IReadOnlyList<(Guid ProductId, int TotalQuantity)>> AggregateStockByProductAsync()
         {
             var rows = await _dbContext.StockLevels
