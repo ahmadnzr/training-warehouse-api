@@ -64,6 +64,16 @@ namespace WarehouseWeb.Api.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
         }
 
+        public async Task<List<Product>> FindByIdsAsync(IEnumerable<Guid> ids)
+        {
+            var idList = ids.Distinct().ToList();
+            if (!idList.Any()) return new List<Product>();
+
+            return await _dbContext.Products
+                .Where(p => idList.Contains(p.Id) && p.DeletedAt == null)
+                .ToListAsync();
+        }
+
         public async Task AddAsync(Product product)
         {
             await _dbContext.Products.AddAsync(product);

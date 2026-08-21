@@ -7,6 +7,7 @@ namespace WarehouseWeb.Api.Repositories
         Task<IEnumerable<WarehouseLocation>> ListAsync(Guid warehouseId, string? search, int offset, int limit, string sort, string order);
         Task<int> CountAsync(Guid warehouseId, string? search);
         Task<WarehouseLocation?> FindByIdAsync(Guid id);
+        Task<List<WarehouseLocation>> FindByIdsAsync(IEnumerable<Guid> ids);
         Task<bool> ExistsByCodeAsync(Guid warehouseId, string code);
         Task AddAsync(WarehouseLocation location);
         Task UpdateAsync(WarehouseLocation location);

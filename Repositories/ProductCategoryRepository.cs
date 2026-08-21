@@ -18,6 +18,16 @@ public class ProductCategoryRepository : IProductCategoryRepository
         return await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
     }
 
+    public async Task<List<Category>> FindByIdsAsync(IEnumerable<Guid> ids)
+    {
+        var idList = ids.Distinct().ToList();
+        if (!idList.Any()) return new List<Category>();
+
+        return await _dbContext.Categories
+            .Where(c => idList.Contains(c.Id) && c.DeletedAt == null)
+            .ToListAsync();
+    }
+
     public async Task<Category?> FindByNameAsync(string name)
     {
         return await _dbContext.Categories

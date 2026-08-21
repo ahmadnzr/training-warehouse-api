@@ -54,6 +54,17 @@ namespace WarehouseWeb.Api.Repositories
                 .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null);
         }
 
+        public async Task<List<WarehouseLocation>> FindByIdsAsync(IEnumerable<Guid> ids)
+        {
+            var idList = ids.Distinct().ToList();
+            if (!idList.Any()) return new List<WarehouseLocation>();
+
+            return await _dbContext.WarehouseLocations
+                .Include(w => w.Warehouse)
+                .Where(w => idList.Contains(w.Id) && w.DeletedAt == null)
+                .ToListAsync();
+        }
+
         public async Task<bool> ExistsByCodeAsync(Guid warehouseId, string code)
         {
             return await _dbContext.WarehouseLocations

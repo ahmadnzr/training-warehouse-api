@@ -11,6 +11,9 @@ namespace WarehouseWeb.Api.Validators.Products
             RuleFor(x => x.Name).NotEmpty().MaximumLength(150);
             RuleFor(x => x.Unit).NotEmpty();
             RuleFor(x => x.Weight).GreaterThanOrEqualTo(0);
+            RuleFor(x => x.CategoryIds)
+                .Must(c => c == null || c.Count <= 20)
+                .WithMessage("Category IDs cannot exceed 20 items");
         }
     }
 }

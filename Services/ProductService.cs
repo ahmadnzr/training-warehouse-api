@@ -69,16 +69,15 @@ namespace WarehouseWeb.Api.Services
 
             if (request.CategoryIds != null && request.CategoryIds.Any())
             {
-                foreach (var categoryId in request.CategoryIds.Distinct())
+                var categoryIds = request.CategoryIds.Distinct().ToList();
+                var categories = await _productCategoryRepository.FindByIdsAsync(categoryIds);
+
+                foreach (var category in categories)
                 {
-                    var category = await _productCategoryRepository.FindByIdAsync(categoryId);
-                    if (category != null)
+                    product.ProductCategories.Add(new ProductCategory
                     {
-                        product.ProductCategories.Add(new ProductCategory
-                        {
-                            CategoryId = category.Id
-                        });
-                    }
+                        CategoryId = category.Id
+                    });
                 }
             }
 
@@ -100,10 +99,12 @@ namespace WarehouseWeb.Api.Services
             {
                 product.ProductCategories.Clear();
 
-                foreach (var categoryId in request.CategoryIds.Distinct())
+                if (request.CategoryIds.Any())
                 {
-                    var category = await _productCategoryRepository.FindByIdAsync(categoryId);
-                    if (category != null)
+                    var categoryIds = request.CategoryIds.Distinct().ToList();
+                    var categories = await _productCategoryRepository.FindByIdsAsync(categoryIds);
+
+                    foreach (var category in categories)
                     {
                         product.ProductCategories.Add(new ProductCategory
                         {
