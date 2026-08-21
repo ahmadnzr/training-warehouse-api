@@ -46,11 +46,8 @@ namespace WarehouseWeb.Api.Services
             if (supplier == null || !supplier.IsActive)
                 throw new UnprocessableException("Supplier not found or inactive");
 
-            foreach (var item in request.Items)
-            {
-                await EnsureActiveProductAsync(item.ProductId);
-                await EnsureActiveLocationAsync(item.DestinationLocationId);
-            }
+            await EnsureActiveProductsAsync(request.Items.Select(i => i.ProductId));
+            await EnsureActiveLocationsAsync(request.Items.Select(i => i.DestinationLocationId));
 
             var movement = new StockMovement
             {
@@ -76,11 +73,8 @@ namespace WarehouseWeb.Api.Services
 
         public async Task<StockMovementDto> CreateOutboundDraftAsync(CreateOutboundMovementRequestDto request, Guid userId)
         {
-            foreach (var item in request.Items)
-            {
-                await EnsureActiveProductAsync(item.ProductId);
-                await EnsureActiveLocationAsync(item.SourceLocationId);
-            }
+            await EnsureActiveProductsAsync(request.Items.Select(i => i.ProductId));
+            await EnsureActiveLocationsAsync(request.Items.Select(i => i.SourceLocationId));
 
             var movement = new StockMovement
             {
@@ -110,11 +104,10 @@ namespace WarehouseWeb.Api.Services
             {
                 if (item.SourceLocationId == item.DestinationLocationId)
                     throw new UnprocessableException("Source and destination location must be different");
-
-                await EnsureActiveProductAsync(item.ProductId);
-                await EnsureActiveLocationAsync(item.SourceLocationId);
-                await EnsureActiveLocationAsync(item.DestinationLocationId);
             }
+
+            await EnsureActiveProductsAsync(request.Items.Select(i => i.ProductId));
+            await EnsureActiveLocationsAsync(request.Items.Select(i => i.SourceLocationId).Concat(request.Items.Select(i => i.DestinationLocationId)));
 
             var movement = new StockMovement
             {
@@ -138,18 +131,34 @@ namespace WarehouseWeb.Api.Services
             return MapToDto(movement);
         }
 
-        private async Task EnsureActiveProductAsync(Guid productId)
+        private async Task EnsureActiveProductsAsync(IEnumerable<Guid> productIds)
         {
-            var product = await _productRepository.FindByIdAsync(productId);
-            if (product == null || !product.IsActive)
-                throw new UnprocessableException($"Product {productId} not found or inactive");
+            var ids = productIds.Distinct().ToList();
+            if (!ids.Any()) return;
+
+            var products = await _productRepository.FindByIdsAsync(ids);
+            var productMap = products.ToDictionary(p => p.Id);
+
+            foreach (var id in ids)
+            {
+                if (!productMap.TryGetValue(id, out var product) || !product.IsActive)
+                    throw new UnprocessableException($"Product {id} not found or inactive");
+            }
         }
 
-        private async Task EnsureActiveLocationAsync(Guid locationId)
+        private async Task EnsureActiveLocationsAsync(IEnumerable<Guid> locationIds)
         {
-            var location = await _locationRepository.FindByIdAsync(locationId);
-            if (location == null || !location.IsActive)
-                throw new UnprocessableException($"Warehouse location {locationId} not found or inactive");
+            var ids = locationIds.Distinct().ToList();
+            if (!ids.Any()) return;
+
+            var locations = await _locationRepository.FindByIdsAsync(ids);
+            var locationMap = locations.ToDictionary(l => l.Id);
+
+            foreach (var id in ids)
+            {
+                if (!locationMap.TryGetValue(id, out var location) || !location.IsActive)
+                    throw new UnprocessableException($"Warehouse location {id} not found or inactive");
+            }
         }
 
         private static string GenerateMovementNumber(StockMovementType type)

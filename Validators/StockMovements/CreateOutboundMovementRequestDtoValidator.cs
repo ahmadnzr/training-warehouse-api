@@ -7,7 +7,10 @@ namespace WarehouseWeb.Api.Validators.StockMovements
     {
         public CreateOutboundMovementRequestDtoValidator()
         {
-            RuleFor(x => x.Items).NotEmpty();
+            RuleFor(x => x.Items)
+                .NotEmpty()
+                .Must(items => items == null || items.Count <= 50)
+                .WithMessage("Items cannot exceed 50 entries per movement");
             RuleFor(x => x.Notes).MaximumLength(1000);
             RuleForEach(x => x.Items).ChildRules(item =>
             {

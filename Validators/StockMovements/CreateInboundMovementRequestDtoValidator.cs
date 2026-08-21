@@ -9,7 +9,10 @@ namespace WarehouseWeb.Api.Validators.StockMovements
         {
             RuleFor(x => x.SupplierId).NotEmpty();
             RuleFor(x => x.Notes).MaximumLength(1000);
-            RuleFor(x => x.Items).NotEmpty();
+            RuleFor(x => x.Items)
+                .NotEmpty()
+                .Must(items => items == null || items.Count <= 50)
+                .WithMessage("Items cannot exceed 50 entries per movement");
             RuleForEach(x => x.Items).ChildRules(item =>
             {
                 item.RuleFor(i => i.ProductId).NotEmpty();
