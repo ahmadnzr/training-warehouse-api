@@ -45,8 +45,8 @@ public class UserRepository : IUserRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(u =>
-                EF.Functions.Like(u.Name, $"%{search}%") ||
-                EF.Functions.Like(u.Email, $"%{search}%"));
+                EF.Functions.Like(u.Name, $"{search}%") ||
+                EF.Functions.Like(u.Email, $"{search}%"));
         }
 
         return await query
@@ -65,8 +65,8 @@ public class UserRepository : IUserRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(u =>
-                EF.Functions.Like(u.Name, $"%{search}%") ||
-                EF.Functions.Like(u.Email, $"%{search}%"));
+                EF.Functions.Like(u.Name, $"{search}%") ||
+                EF.Functions.Like(u.Email, $"{search}%"));
         }
 
         return await query.CountAsync();

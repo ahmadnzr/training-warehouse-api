@@ -22,7 +22,9 @@ namespace WarehouseWeb.Api.Repositories
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(w => w.Name.Contains(search) || w.Code.Contains(search));
+                query = query.Where(w =>
+                    EF.Functions.Like(w.Name, $"{search}%") ||
+                    EF.Functions.Like(w.Code, $"{search}%"));
             }
 
             query = sort.ToLower() switch
@@ -41,7 +43,9 @@ namespace WarehouseWeb.Api.Repositories
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(w => w.Name.Contains(search) || w.Code.Contains(search));
+                query = query.Where(w =>
+                    EF.Functions.Like(w.Name, $"{search}%") ||
+                    EF.Functions.Like(w.Code, $"{search}%"));
             }
 
             return await query.CountAsync();
