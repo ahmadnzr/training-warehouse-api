@@ -60,9 +60,9 @@ public class WarehouseRepository : IWarehouseRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(w =>
-                EF.Functions.Like(w.Code, $"%{search}%") ||
-                EF.Functions.Like(w.Name, $"%{search}%") ||
-                EF.Functions.Like(w.City!, $"%{search}%"));
+                EF.Functions.Like(w.Code, $"{search}%") ||
+                EF.Functions.Like(w.Name, $"{search}%") ||
+                EF.Functions.Like(w.City!, $"{search}%"));
         }
 
         var isAsc = order.Equals("ASC", StringComparison.OrdinalIgnoreCase);
@@ -92,9 +92,9 @@ public class WarehouseRepository : IWarehouseRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(w =>
-                EF.Functions.Like(w.Code, $"%{search}%") ||
-                EF.Functions.Like(w.Name, $"%{search}%") ||
-                EF.Functions.Like(w.City!, $"%{search}%"));
+                EF.Functions.Like(w.Code, $"{search}%") ||
+                EF.Functions.Like(w.Name, $"{search}%") ||
+                EF.Functions.Like(w.City!, $"{search}%"));
         }
 
         return await query.CountAsync();

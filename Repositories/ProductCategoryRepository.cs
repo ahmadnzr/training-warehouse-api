@@ -68,7 +68,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(c => EF.Functions.Like(c.Name, $"%{search}%"));
+            query = query.Where(c => EF.Functions.Like(c.Name, $"{search}%"));
         }
 
         var isAsc = order.Equals("ASC", StringComparison.OrdinalIgnoreCase);
@@ -90,7 +90,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(c => EF.Functions.Like(c.Name, $"%{search}%"));
+            query = query.Where(c => EF.Functions.Like(c.Name, $"{search}%"));
         }
 
         return await query.CountAsync();
