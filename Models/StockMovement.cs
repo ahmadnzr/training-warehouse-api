@@ -1,8 +1,9 @@
+using WarehouseWeb.Api.Common;
 using WarehouseWeb.Api.Models.Enums;
 
 namespace WarehouseWeb.Api.Models
 {
-    public class StockMovement
+    public class StockMovement : ISoftDeletable
     {
 
         public Guid Id { get; set; } = Guid.NewGuid();

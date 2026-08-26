@@ -16,20 +16,20 @@ public class WarehouseRepository : IWarehouseRepository
     public async Task<Warehouse?> FindByIdAsync(Guid id)
     {
         return await _dbContext.Warehouses
-            .Include(w => w.Locations.Where(l => l.DeletedAt == null))
-            .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null);
+            .Include(w => w.Locations)
+            .FirstOrDefaultAsync(w => w.Id == id);
     }
 
     public async Task<Warehouse?> FindByCodeAsync(string code)
     {
         return await _dbContext.Warehouses
-            .FirstOrDefaultAsync(w => w.Code == code && w.DeletedAt == null);
+            .FirstOrDefaultAsync(w => w.Code == code);
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, Guid? excludeId = null)
     {
         var query = _dbContext.Warehouses
-            .Where(w => w.Code == code && w.DeletedAt == null);
+            .Where(w => w.Code == code);
 
         if (excludeId.HasValue)
         {
@@ -54,8 +54,7 @@ public class WarehouseRepository : IWarehouseRepository
 
     public async Task<List<Warehouse>> ListAsync(string? search, int skip, int take, string sort, string order)
     {
-        var query = _dbContext.Warehouses
-            .Where(w => w.DeletedAt == null);
+        var query = _dbContext.Warehouses.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -77,7 +76,7 @@ public class WarehouseRepository : IWarehouseRepository
         };
 
         return await query
-            .Include(w => w.Locations.Where(l => l.DeletedAt == null))
+            .Include(w => w.Locations)
             .Skip(skip)
             .Take(take)
             .ToListAsync();
@@ -85,9 +84,7 @@ public class WarehouseRepository : IWarehouseRepository
 
     public async Task<int> CountAsync(string? search)
     {
-        var query = _dbContext.Warehouses
-            .Where(w => w.DeletedAt == null)
-            .AsQueryable();
+        var query = _dbContext.Warehouses.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

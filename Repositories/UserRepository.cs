@@ -16,19 +16,19 @@ public class UserRepository : IUserRepository
     public async Task<User?> FindByEmailAsync(string email)
     {
         return await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null);
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<User?> FindByIdAsync(Guid id)
     {
         return await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<bool> ExistsByEmailAsync(string email)
     {
         return await _dbContext.Users
-            .AnyAsync(u => u.Email == email && u.DeletedAt == null);
+            .AnyAsync(u => u.Email == email);
     }
 
     public async Task AddAsync(User user)
@@ -39,8 +39,7 @@ public class UserRepository : IUserRepository
 
     public async Task<List<User>> ListAsync(string? search, int skip, int take)
     {
-        var query = _dbContext.Users
-            .Where(u => u.DeletedAt == null);
+        var query = _dbContext.Users.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -58,9 +57,7 @@ public class UserRepository : IUserRepository
 
     public async Task<int> CountAsync(string? search)
     {
-        var query = _dbContext.Users
-            .Where(u => u.DeletedAt == null)
-            .AsQueryable();
+        var query = _dbContext.Users.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WarehouseWeb.Api.Data.Extensions;
 using WarehouseWeb.Api.Models;
 using WarehouseWeb.Api.Models.Enums;
 
@@ -42,6 +43,8 @@ public class AppDbContext : DbContext
         ConfigureDailyStockReports(modelBuilder);
         ConfigureDailyStockReportItems(modelBuilder);
         ConfigureNotificationLogs(modelBuilder);
+
+        modelBuilder.ApplySoftDeleteQueryFilter();
     }
 
     private static void ConfigureJobExecutionLogs(ModelBuilder modelBuilder)

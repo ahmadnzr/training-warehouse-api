@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using WarehouseWeb.Api.Common;
 using WarehouseWeb.Api.Data;
+using WarehouseWeb.Api.Data.Interceptors;
 using WarehouseWeb.Api.Jobs;
 using WarehouseWeb.Api.Middleware;
 using WarehouseWeb.Api.Repositories;
@@ -16,8 +17,11 @@ using WarehouseWeb.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<SoftDeleteInterceptor>();
+
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>()));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

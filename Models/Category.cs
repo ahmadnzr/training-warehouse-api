@@ -1,6 +1,8 @@
+using WarehouseWeb.Api.Common;
+
 namespace WarehouseWeb.Api.Models;
 
-public class Category
+public class Category : ISoftDeletable
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;

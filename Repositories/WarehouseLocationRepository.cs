@@ -17,7 +17,7 @@ namespace WarehouseWeb.Api.Repositories
         {
             var query = _dbContext.WarehouseLocations
                 .Include(w => w.Warehouse)
-                .Where(w => w.DeletedAt == null && w.WarehouseId == warehouseId)
+                .Where(w => w.WarehouseId == warehouseId)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -39,7 +39,7 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task<int> CountAsync(Guid warehouseId, string? search)
         {
-            var query = _dbContext.WarehouseLocations.Where(w => w.DeletedAt == null && w.WarehouseId == warehouseId).AsQueryable();
+            var query = _dbContext.WarehouseLocations.Where(w => w.WarehouseId == warehouseId).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -55,7 +55,7 @@ namespace WarehouseWeb.Api.Repositories
         {
             return await _dbContext.WarehouseLocations
                 .Include(w => w.Warehouse)
-                .FirstOrDefaultAsync(w => w.Id == id && w.DeletedAt == null);
+                .FirstOrDefaultAsync(w => w.Id == id);
         }
 
         public async Task<List<WarehouseLocation>> FindByIdsAsync(IEnumerable<Guid> ids)
@@ -65,14 +65,14 @@ namespace WarehouseWeb.Api.Repositories
 
             return await _dbContext.WarehouseLocations
                 .Include(w => w.Warehouse)
-                .Where(w => idList.Contains(w.Id) && w.DeletedAt == null)
+                .Where(w => idList.Contains(w.Id))
                 .ToListAsync();
         }
 
         public async Task<bool> ExistsByCodeAsync(Guid warehouseId, string code)
         {
             return await _dbContext.WarehouseLocations
-                .AnyAsync(w => w.WarehouseId == warehouseId && w.Code == code && w.DeletedAt == null);
+                .AnyAsync(w => w.WarehouseId == warehouseId && w.Code == code);
         }
 
         public async Task AddAsync(WarehouseLocation location)

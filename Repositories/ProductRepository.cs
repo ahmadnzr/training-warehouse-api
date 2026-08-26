@@ -17,7 +17,7 @@ namespace WarehouseWeb.Api.Repositories
         public async Task<bool> ExistsBySkuAsync(string sku)
         {
             return await _dbContext.Products
-                .AnyAsync(p => p.Sku == sku && p.DeletedAt == null);
+                .AnyAsync(p => p.Sku == sku);
         }
 
 
@@ -26,7 +26,6 @@ namespace WarehouseWeb.Api.Repositories
             var query = _dbContext.Products
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
-                .Where(p => p.DeletedAt == null)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -48,7 +47,7 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task<int> CountAsync(string? search)
         {
-            var query = _dbContext.Products.Where(p => p.DeletedAt == null).AsQueryable();
+            var query = _dbContext.Products.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -65,7 +64,7 @@ namespace WarehouseWeb.Api.Repositories
             return await _dbContext.Products
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
-                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<List<Product>> FindByIdsAsync(IEnumerable<Guid> ids)
@@ -74,7 +73,7 @@ namespace WarehouseWeb.Api.Repositories
             if (!idList.Any()) return new List<Product>();
 
             return await _dbContext.Products
-                .Where(p => idList.Contains(p.Id) && p.DeletedAt == null)
+                .Where(p => idList.Contains(p.Id))
                 .ToListAsync();
         }
 

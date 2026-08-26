@@ -1,6 +1,8 @@
+using WarehouseWeb.Api.Common;
+
 namespace WarehouseWeb.Api.Models;
 
-public class WarehouseLocation
+public class WarehouseLocation : ISoftDeletable
 {
     public Guid Id { get; set; }
 
