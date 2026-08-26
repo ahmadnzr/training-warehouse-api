@@ -15,7 +15,7 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task<IEnumerable<Supplier>> ListAsync(string? search, int offset, int limit, string sort, string order)
         {
-            var query = _dbContext.Suppliers.Where(s => s.DeletedAt == null).AsQueryable();
+            var query = _dbContext.Suppliers.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -37,7 +37,7 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task<int> CountAsync(string? search)
         {
-            var query = _dbContext.Suppliers.Where(s => s.DeletedAt == null).AsQueryable();
+            var query = _dbContext.Suppliers.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -52,12 +52,12 @@ namespace WarehouseWeb.Api.Repositories
 
         public async Task<Supplier?> FindByIdAsync(Guid id)
         {
-            return await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+            return await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task<bool> ExistsByCodeAsync(string code)
         {
-            return await _dbContext.Suppliers.AnyAsync(s => s.Code == code && s.DeletedAt == null);
+            return await _dbContext.Suppliers.AnyAsync(s => s.Code == code);
         }
 
         public async Task AddAsync(Supplier supplier)

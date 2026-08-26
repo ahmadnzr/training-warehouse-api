@@ -21,7 +21,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedProductsAsync(AppDbContext dbContext)
     {
-        if (await dbContext.Products.AnyAsync(p => p.DeletedAt == null)) return;
+        if (await dbContext.Products.AnyAsync()) return;
 
         var now = DateTime.UtcNow;
 
@@ -64,7 +64,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedCategoriesAsync(AppDbContext dbContext)
     {
-        if (await dbContext.Categories.AnyAsync(c => c.DeletedAt == null))
+        if (await dbContext.Categories.AnyAsync())
         {
             return;
         }
@@ -83,7 +83,7 @@ public static class DatabaseSeeder
         foreach (var category in categories)
         {
             var exists = await dbContext.Categories
-                .AnyAsync(c => c.Name == category.Name && c.DeletedAt == null);
+                .AnyAsync(c => c.Name == category.Name);
 
             if (!exists)
             {
@@ -95,7 +95,7 @@ public static class DatabaseSeeder
     }
     private static async Task SeedWarehousesAsync(AppDbContext dbContext)
     {
-        if (await dbContext.Warehouses.AnyAsync(w => w.DeletedAt == null))
+        if (await dbContext.Warehouses.AnyAsync())
         {
             return;
         }
@@ -114,7 +114,7 @@ public static class DatabaseSeeder
         foreach (var warehouse in warehouses)
         {
             var exists = await dbContext.Warehouses
-                .AnyAsync(w => w.Code == warehouse.Code && w.DeletedAt == null);
+                .AnyAsync(w => w.Code == warehouse.Code);
 
             if (!exists)
             {

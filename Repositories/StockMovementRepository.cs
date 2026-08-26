@@ -24,9 +24,7 @@ namespace WarehouseWeb.Api.Repositories
             DateTime? dateTo,
             Guid? createdByUserId)
         {
-            var query = _dbContext.StockMovements
-                .Where(m => m.DeletedAt == null)
-                .AsQueryable();
+            var query = _dbContext.StockMovements.AsQueryable();
 
             if (type.HasValue)
                 query = query.Where(m => m.Type == type.Value);
@@ -54,7 +52,7 @@ namespace WarehouseWeb.Api.Repositories
         {
             return await _dbContext.StockMovements
                 .Include(m => m.Items)
-                .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
+                .FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public async Task AddAsync(StockMovement movement)

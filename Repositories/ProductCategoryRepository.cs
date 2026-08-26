@@ -15,7 +15,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<Category?> FindByIdAsync(Guid id)
     {
-        return await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
+        return await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id);
     }
 
     public async Task<List<Category>> FindByIdsAsync(IEnumerable<Guid> ids)
@@ -24,20 +24,20 @@ public class ProductCategoryRepository : IProductCategoryRepository
         if (!idList.Any()) return new List<Category>();
 
         return await _dbContext.Categories
-            .Where(c => idList.Contains(c.Id) && c.DeletedAt == null)
+            .Where(c => idList.Contains(c.Id))
             .ToListAsync();
     }
 
     public async Task<Category?> FindByNameAsync(string name)
     {
         return await _dbContext.Categories
-            .FirstOrDefaultAsync(c => c.Name == name && c.DeletedAt == null);
+            .FirstOrDefaultAsync(c => c.Name == name);
     }
 
     public async Task<bool> ExistsByNameAsync(string name, Guid? excludeId = null)
     {
         var query = _dbContext.Categories
-            .Where(c => c.Name == name && c.DeletedAt == null);
+            .Where(c => c.Name == name);
 
         // Jika excludeId ada (sedang update), jangan cek ID milik sendiri
         if (excludeId.HasValue)
@@ -63,8 +63,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<List<Category>> ListAsync(string? search, int skip, int take, string sort, string order)
     {
-        var query = _dbContext.Categories
-            .Where(c => c.DeletedAt == null);
+        var query = _dbContext.Categories.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -85,8 +84,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<int> CountAsync(string? search)
     {
-        var query = _dbContext.Categories
-            .Where(c => c.DeletedAt == null);
+        var query = _dbContext.Categories.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
