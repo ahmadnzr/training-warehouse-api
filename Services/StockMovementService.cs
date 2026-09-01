@@ -139,10 +139,18 @@ namespace WarehouseWeb.Api.Services
             var products = await _productRepository.FindByIdsAsync(ids);
             var productMap = products.ToDictionary(p => p.Id);
 
-            foreach (var id in ids)
+            var inactiveProducts = ids.Where(id => productMap.TryGetValue(id, out var product) && !product.IsActive).ToList();
+            var notFoundProducts = ids.Where(id => !productMap.ContainsKey(id)).ToList();
+
+            if (inactiveProducts.Count != 0 || notFoundProducts.Count != 0)
             {
-                if (!productMap.TryGetValue(id, out var product) || !product.IsActive)
-                    throw new UnprocessableException($"Product {id} not found or inactive");
+                var messages = new List<string>();
+                if (inactiveProducts.Count != 0)
+                    messages.Add($"Some {inactiveProducts.Count} products are inactive: {string.Join(", ", inactiveProducts)}");
+                if (notFoundProducts.Count != 0)
+                    messages.Add($"Some {notFoundProducts.Count} products are not found: {string.Join(", ", notFoundProducts)}");
+
+                throw new UnprocessableException(string.Join("; ", messages));
             }
         }
 
@@ -154,10 +162,18 @@ namespace WarehouseWeb.Api.Services
             var locations = await _locationRepository.FindByIdsAsync(ids);
             var locationMap = locations.ToDictionary(l => l.Id);
 
-            foreach (var id in ids)
+            var inactiveLocations = ids.Where(id => locationMap.TryGetValue(id, out var location) && !location.IsActive).ToList();
+            var notFoundLocations = ids.Where(id => !locationMap.ContainsKey(id)).ToList();
+
+            if (inactiveLocations.Count != 0 || notFoundLocations.Count != 0)
             {
-                if (!locationMap.TryGetValue(id, out var location) || !location.IsActive)
-                    throw new UnprocessableException($"Warehouse location {id} not found or inactive");
+                var messages = new List<string>();
+                if (inactiveLocations.Count != 0)
+                    messages.Add($"Some {inactiveLocations.Count} warehouse locations are inactive: {string.Join(", ", inactiveLocations)}");
+                if (notFoundLocations.Count != 0)
+                    messages.Add($"Some {notFoundLocations.Count} warehouse locations are not found: {string.Join(", ", notFoundLocations)}");
+
+                throw new UnprocessableException(string.Join("; ", messages));
             }
         }
 
