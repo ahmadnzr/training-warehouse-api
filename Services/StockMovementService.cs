@@ -414,18 +414,30 @@ namespace WarehouseWeb.Api.Services
 
         private void EnqueueDraftExpirationJob(Guid movementId, DateTime createdAt, int expiryHours = 24)
         {
-            _queue.QueueAsyncTask(async () =>
+            _queue.QueueAsyncTask(() =>
             {
-                var targetTime = createdAt.AddHours(expiryHours);
-                var delay = targetTime - DateTime.UtcNow;
-                if (delay > TimeSpan.Zero)
+                _ = Task.Run(async () =>
                 {
-                    await Task.Delay(delay);
-                }
+                    var targetTime = createdAt.AddHours(expiryHours);
+                    var delay = targetTime - DateTime.UtcNow;
+                    if (delay > TimeSpan.Zero)
+                    {
+                        await Task.Delay(delay);
+                    }
 
-                using var scope = _scopeFactory.CreateScope();
-                var service = scope.ServiceProvider.GetRequiredService<IStockMovementService>();
-                await service.CancelIfExpiredDraftAsync(movementId, expiryHours);
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var service = scope.ServiceProvider.GetRequiredService<IStockMovementService>();
+                        await service.CancelIfExpiredDraftAsync(movementId, expiryHours);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to auto-cancel expired draft {MovementId}", movementId);
+                    }
+                });
+
+                return Task.CompletedTask;
             });
         }
     }

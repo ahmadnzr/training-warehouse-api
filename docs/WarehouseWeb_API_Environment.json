@@ -51,6 +51,11 @@
       "key": "supplier_id",
       "value": "",
       "enabled": true
+    },
+    {
+      "key": "movement_id",
+      "value": "",
+      "enabled": true
     }
   ]
 }
