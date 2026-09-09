@@ -4,6 +4,7 @@ namespace WarehouseWeb.Api.Models.Enums
     {
         Pending,
         Sent,
-        Failed
+        Failed,
+        Read
     }
 }
