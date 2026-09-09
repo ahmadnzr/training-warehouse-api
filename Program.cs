@@ -127,6 +127,9 @@ builder.Services.AddScoped<IDailyStockReportRepository, DailyStockReportReposito
 builder.Services.AddScoped<IDailyStockReportService, DailyStockReportService>();
 builder.Services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IStockMovementCleanupService, StockMovementCleanupService>();
+
+builder.Services.AddTransient<CleanupCancelledStockMovementsJob>();
 
 builder.Services.AddScheduler();
 // Kalau pakai queue notification:
@@ -144,6 +147,13 @@ app.Services.UseScheduler(scheduler =>
         .Schedule<DailyStockReportJob>()
         .DailyAtHour(0)          // 00:00
 .Zoned(TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta"));
+
+
+    scheduler
+        .OnWorker("CleanupWorker")
+        .Schedule<CleanupCancelledStockMovementsJob>()
+        .DailyAtHour(2)          // 02:00 WIB setiap hari
+        .Zoned(TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta"));
 });
 
 

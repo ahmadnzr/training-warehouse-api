@@ -2771,6 +2771,38 @@
           }
         },
         {
+          "name": "Run Cleanup Cancelled Stock Movements",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs/cleanup-cancelled-movements/run?days=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "cleanup-cancelled-movements",
+                "run"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30",
+                  "description": "Batas usia movement cancelled dalam hari (default: 30)"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "List Job Executions",
           "request": {
             "method": "GET",

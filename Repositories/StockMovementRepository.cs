@@ -119,6 +119,24 @@ namespace WarehouseWeb.Api.Repositories
             _dbContext.StockLevels.Update(stockLevel);
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task<List<StockMovement>> GetCancelledMovementsOlderThanAsync(DateTime cutoffDate, int batchSize = 100)
+        {
+            return await _dbContext.StockMovements
+                .IgnoreQueryFilters()
+                .Where(m => m.Status == StockMovementStatus.Cancelled
+                         && m.CancelledAt != null
+                         && m.CancelledAt <= cutoffDate)
+                .Take(batchSize)
+                .ToListAsync();
+        }
+
+        public async Task HardDeleteAsync(StockMovement movement)
+        {
+            await _dbContext.StockMovements
+                .Where(m => m.Id == movement.Id)
+                .ExecuteDeleteAsync();
+        }
     }
 
 }

@@ -36,5 +36,8 @@ namespace WarehouseWeb.Api.Repositories
         Task<StockLevel?> GetStockLevelAsync(Guid productId, Guid locationId);
         Task AddStockLevelAsync(StockLevel stockLevel);
         Task UpdateStockLevelAsync(StockLevel stockLevel);
+
+        Task<List<StockMovement>> GetCancelledMovementsOlderThanAsync(DateTime cutoffDate, int batchSize = 100);
+        Task HardDeleteAsync(StockMovement movement);
     }
 }

@@ -13,10 +13,12 @@ namespace WarehouseWeb.Api.Controllers;
 public class JobsController : ControllerBase
 {
     private readonly IDailyStockReportService _reportService;
+    private readonly IStockMovementCleanupService _cleanupService;
 
-    public JobsController(IDailyStockReportService reportService)
+    public JobsController(IDailyStockReportService reportService, IStockMovementCleanupService cleanupService)
     {
         _reportService = reportService;
+        _cleanupService = cleanupService;
     }
 
     /// <summary>
@@ -36,5 +38,17 @@ public class JobsController : ControllerBase
     {
         var result = await _reportService.ListJobExecutionsAsync(request);
         return Ok(new ApiResponse<PaginatedResponse<JobExecutionLogDto>>("Job executions retrieved successfully", result));
+    }
+
+    /// <summary>
+    /// Manual trigger pembersihan movement cancelled (> 30 hari).
+    /// Memudahkan pengujian dan demo tanpa perlu menunggu jadwal scheduler.
+    /// </summary>
+    [HttpPost("cleanup-cancelled-movements/run")]
+    [ProducesResponseType(typeof(ApiResponse<CleanupCancelledMovementsResultDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RunCleanupCancelledMovements([FromQuery] int days = 30)
+    {
+        var result = await _cleanupService.CleanupCancelledOlderThanDaysAsync(days);
+        return Ok(new ApiResponse<CleanupCancelledMovementsResultDto>("Cleanup cancelled stock movements job finished", result));
     }
 }
