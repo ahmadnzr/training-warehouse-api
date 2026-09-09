@@ -10,7 +10,9 @@ using Microsoft.OpenApi.Models;
 using WarehouseWeb.Api.Common;
 using WarehouseWeb.Api.Data;
 using WarehouseWeb.Api.Data.Interceptors;
+using WarehouseWeb.Api.Events;
 using WarehouseWeb.Api.Jobs;
+using WarehouseWeb.Api.Listeners;
 using WarehouseWeb.Api.Middleware;
 using WarehouseWeb.Api.Repositories;
 using WarehouseWeb.Api.Services;
@@ -132,13 +134,17 @@ builder.Services.AddScoped<IStockMovementCleanupService, StockMovementCleanupSer
 builder.Services.AddTransient<CleanupCancelledStockMovementsJob>();
 
 builder.Services.AddScheduler();
-// Kalau pakai queue notification:
 builder.Services.AddQueue();
+builder.Services.AddEvents();
 
 builder.Services.AddTransient<DailyStockReportJob>();
-// builder.Services.AddTransient<MovementCompletedNotificationJob>(); // section 6
+builder.Services.AddTransient<MovementCompletedListener>();
 
 var app = builder.Build();
+
+app.Services.ConfigureEvents()
+    .Register<MovementCompletedEvent>()
+    .Subscribe<MovementCompletedListener>();
 
 app.Services.UseScheduler(scheduler =>
 {

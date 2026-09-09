@@ -14,11 +14,16 @@ public class JobsController : ControllerBase
 {
     private readonly IDailyStockReportService _reportService;
     private readonly IStockMovementCleanupService _cleanupService;
+    private readonly IStockMovementService _stockMovementService;
 
-    public JobsController(IDailyStockReportService reportService, IStockMovementCleanupService cleanupService)
+    public JobsController(
+        IDailyStockReportService reportService,
+        IStockMovementCleanupService cleanupService,
+        IStockMovementService stockMovementService)
     {
         _reportService = reportService;
         _cleanupService = cleanupService;
+        _stockMovementService = stockMovementService;
     }
 
     /// <summary>
@@ -50,5 +55,15 @@ public class JobsController : ControllerBase
     {
         var result = await _cleanupService.CleanupCancelledOlderThanDaysAsync(days);
         return Ok(new ApiResponse<CleanupCancelledMovementsResultDto>("Cleanup cancelled stock movements job finished", result));
+    }
+
+    [HttpPost("cancel-expired-draft/{movementId}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CancelExpiredDraft(Guid movementId, [FromQuery] int expiryHours = 24)
+    {
+        var cancelled = await _stockMovementService.CancelIfExpiredDraftAsync(movementId, expiryHours);
+        return Ok(new ApiResponse<object>(
+            cancelled ? "Draft movement successfully auto-cancelled" : "Movement is not eligible for cancellation",
+            new { movement_id = movementId, is_cancelled = cancelled }));
     }
 }

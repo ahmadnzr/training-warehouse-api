@@ -17,5 +17,6 @@ namespace WarehouseWeb.Api.Services
 
         Task<StockMovementDto> CompleteAsync(Guid id);
         Task<StockMovementDto> CancelAsync(Guid id, Guid currentUserId, string currentUserRole);
+        Task<bool> CancelIfExpiredDraftAsync(Guid id, int expiryHours = 24);
     }
 }
