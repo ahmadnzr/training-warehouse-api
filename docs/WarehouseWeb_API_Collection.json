@@ -2803,6 +2803,38 @@
           }
         },
         {
+          "name": "Cancel Expired Draft Movement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs/cancel-expired-draft/{{movement_id}}?expiryHours=24",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "cancel-expired-draft",
+                "{{movement_id}}"
+              ],
+              "query": [
+                {
+                  "key": "expiryHours",
+                  "value": "24",
+                  "description": "Batas waktu draft expired dalam jam (default: 24)"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "List Job Executions",
           "request": {
             "method": "GET",

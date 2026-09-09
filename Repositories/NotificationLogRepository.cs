@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using WarehouseWeb.Api.Data;
 using WarehouseWeb.Api.Models;
 
@@ -16,6 +17,12 @@ namespace WarehouseWeb.Api.Repositories
         {
             await _dbContext.NotificationLogs.AddAsync(log);
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsByMovementIdAsync(Guid movementId)
+        {
+            return await _dbContext.NotificationLogs
+                .AnyAsync(n => n.RelatedMovementId == movementId);
         }
     }
 }

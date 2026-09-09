@@ -87,6 +87,7 @@ DatabaseSeeder akan membuat 3 user default dengan password `Admin123!`:
 
 - `POST /api/v1/jobs/daily-stock-report/run` - Jalankan sinkronisasi laporan harian
 - `POST /api/v1/jobs/cleanup-cancelled-movements/run` - Jalankan cleanup cancelled stock movements (> 30 hari)
+- `POST /api/v1/jobs/cancel-expired-draft/{movementId}` - Batalkan draft movement yang sudah expired (> 24 jam)
 - `GET /api/v1/jobs/executions` - Lihat riwayat jalannya Job
 - `GET /api/v1/reports/daily-stock` - Lihat Laporan Stok Harian
 
