@@ -130,6 +130,8 @@ builder.Services.AddScoped<IDailyStockReportService, DailyStockReportService>();
 builder.Services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStockMovementCleanupService, StockMovementCleanupService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
 builder.Services.AddTransient<CleanupCancelledStockMovementsJob>();
 
