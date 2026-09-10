@@ -19,6 +19,20 @@ using WarehouseWeb.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SpaClientPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddSingleton<SoftDeleteInterceptor>();
 
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
@@ -39,7 +53,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(secret))
+                System.Text.Encoding.UTF8.GetBytes(secret)),
+            ClockSkew = TimeSpan.Zero // Menghindari toleransi waktu default 5 menit
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                // 1. Ekstrak token dari HttpOnly cookie 'access_token'
+                if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken)
+                    && !string.IsNullOrWhiteSpace(cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+                // 2. Fallback otomatis ke header 'Authorization: Bearer <token>' jika cookie tidak ada
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -130,6 +160,8 @@ builder.Services.AddScoped<IDailyStockReportService, DailyStockReportService>();
 builder.Services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStockMovementCleanupService, StockMovementCleanupService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
@@ -184,6 +216,7 @@ if (app.Environment.IsDevelopment())
 app.UseRequestLogging();
 app.UseGlobalExceptionHandler();
 app.UseHttpsRedirection();
+app.UseCors("SpaClientPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
