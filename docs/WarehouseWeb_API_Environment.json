@@ -56,6 +56,11 @@
       "key": "movement_id",
       "value": "",
       "enabled": true
+    },
+    {
+      "key": "notification_id",
+      "value": "",
+      "enabled": true
     }
   ]
 }

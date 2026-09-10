@@ -9,47 +9,68 @@ namespace WarehouseWeb.Api.Services
     {
         private readonly IProductRepository _productRepository;
         private readonly IProductCategoryRepository _productCategoryRepository;
+        private readonly ICacheService _cacheService;
 
         public ProductService(
             IProductRepository productRepository,
-            IProductCategoryRepository categoryRepository)
+            IProductCategoryRepository categoryRepository,
+            ICacheService cacheService)
         {
             _productRepository = productRepository;
             _productCategoryRepository = categoryRepository;
+            _cacheService = cacheService;
         }
 
         public async Task<PaginatedResponse<ProductDto>> ListAsync(PaginationRequest request)
         {
             request.Validate();
 
-            var items = await _productRepository.ListAsync(
-                request.Search,
-                request.GetOffset(),
-                request.PerPage,
-                request.Sort,
-                request.Order
-            );
+            var cacheKey = $"products:list:search={request.Search?.Trim().ToLowerInvariant()}:page={request.Page}:per_page={request.PerPage}:sort={request.Sort?.ToLowerInvariant()}:order={request.Order?.ToLowerInvariant()}";
 
-            var total = await _productRepository.CountAsync(request.Search);
-
-            return new PaginatedResponse<ProductDto>
-            {
-                Items = items.Select(MapToDto).ToList(),
-                Meta = new PaginationMeta
+            return await _cacheService.GetOrCreateAsync(
+                cacheKey,
+                async () =>
                 {
-                    Page = request.Page,
-                    PerPage = request.PerPage,
-                    Total = total,
-                    TotalPage = (int)Math.Ceiling(total / (double)request.PerPage),
+                    var items = await _productRepository.ListAsync(
+                        request.Search,
+                        request.GetOffset(),
+                        request.PerPage,
+                        request.Sort ?? "created_at",
+                        request.Order ?? "desc"
+                    );
+
+                    var total = await _productRepository.CountAsync(request.Search);
+
+                    return new PaginatedResponse<ProductDto>
+                    {
+                        Items = items.Select(MapToDto).ToList(),
+                        Meta = new PaginationMeta
+                        {
+                            Page = request.Page,
+                            PerPage = request.PerPage,
+                            Total = total,
+                            TotalPage = (int)Math.Ceiling(total / (double)request.PerPage),
+                        },
+                    };
                 },
-            };
+                TimeSpan.FromMinutes(5)
+            );
         }
 
         public async Task<ProductDto> GetByIdAsync(Guid id)
         {
-            var product = await _productRepository.FindByIdAsync(id);
-            if (product == null) throw new NotFoundException("Product not found");
-            return MapToDto(product);
+            var cacheKey = $"products:detail:{id}";
+
+            return await _cacheService.GetOrCreateAsync(
+                cacheKey,
+                async () =>
+                {
+                    var product = await _productRepository.FindByIdAsync(id);
+                    if (product == null) throw new NotFoundException("Product not found");
+                    return MapToDto(product);
+                },
+                TimeSpan.FromMinutes(10)
+            );
         }
 
         public async Task<ProductDto> CreateAsync(CreateProductRequestDto request)
@@ -82,6 +103,7 @@ namespace WarehouseWeb.Api.Services
             }
 
             await _productRepository.AddAsync(product);
+            await _cacheService.RemoveByPrefixAsync("products:list:");
             return MapToDto(product);
         }
 
@@ -115,6 +137,8 @@ namespace WarehouseWeb.Api.Services
             }
 
             await _productRepository.UpdateAsync(product);
+            await _cacheService.RemoveAsync($"products:detail:{id}");
+            await _cacheService.RemoveByPrefixAsync("products:list:");
             return MapToDto(product);
         }
 
@@ -127,6 +151,8 @@ namespace WarehouseWeb.Api.Services
             product.UpdatedAt = DateTime.UtcNow;
 
             await _productRepository.UpdateAsync(product);
+            await _cacheService.RemoveAsync($"products:detail:{id}");
+            await _cacheService.RemoveByPrefixAsync("products:list:");
         }
 
         private static ProductDto MapToDto(Product entity)
