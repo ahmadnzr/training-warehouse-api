@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -14,11 +15,16 @@ namespace WarehouseWeb.Api.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IConfiguration _configuration;
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration)
+    public AuthService(
+        IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
+        IConfiguration configuration)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
     }
 
@@ -52,16 +58,10 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
+    public async Task<(AuthResponseDto User, string AccessToken, string RefreshToken)> LoginAsync(LoginRequestDto request)
     {
         var user = await _userRepository.FindByEmailAsync(request.Email);
-        if (user == null)
-        {
-            throw new UnauthorizedException("Invalid email or password");
-        }
-
-        var isValidPassword = PasswordHasher.VerifyPassword(request.Password, user.PasswordHash);
-        if (!isValidPassword)
+        if (user == null || !PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
             throw new UnauthorizedException("Invalid email or password");
         }
@@ -76,20 +76,80 @@ public class AuthService : IAuthService
             throw new ForbiddenException("No role assigned. Please contact admin.");
         }
 
-        var token = GenerateJwtToken(user);
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = await GenerateAndSaveRefreshTokenAsync(user.Id);
 
-        return new LoginResponseDto
+        var userDto = new AuthResponseDto
         {
-            AccessToken = token,
-            User = new AuthResponseDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Role = RoleHelper.ToSnakeCaseRole(user.Role),
-                IsActive = user.IsActive
-            }
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = RoleHelper.ToSnakeCaseRole(user.Role),
+            IsActive = user.IsActive
         };
+
+        return (userDto, accessToken, refreshToken.Token);
+    }
+
+    public async Task<(AuthResponseDto User, string AccessToken, string RefreshToken)> RefreshTokenAsync(string oldRefreshToken)
+    {
+        var tokenEntity = await _refreshTokenRepository.FindByTokenAsync(oldRefreshToken);
+        if (tokenEntity == null || tokenEntity.IsRevoked || tokenEntity.IsExpired)
+        {
+            // Token Reuse Detection: Revoke seluruh token aktif user jika token yang sudah dicabut dicoba dipakai kembali
+            if (tokenEntity != null && tokenEntity.IsRevoked)
+            {
+                await _refreshTokenRepository.RevokeAllUserTokensAsync(tokenEntity.UserId);
+            }
+            throw new UnauthorizedException("Invalid or expired refresh token");
+        }
+
+        var user = tokenEntity.User;
+        if (!user.IsActive)
+        {
+            throw new ForbiddenException("User account is inactive");
+        }
+
+        // Token Rotation: Cabut token lama dan terbitkan pasangan token baru
+        tokenEntity.IsRevoked = true;
+        tokenEntity.RevokedAt = DateTime.UtcNow;
+
+        var newAccessToken = GenerateJwtToken(user);
+        var newRefreshToken = await GenerateAndSaveRefreshTokenAsync(user.Id);
+        tokenEntity.ReplacedByToken = newRefreshToken.Token;
+
+        await _refreshTokenRepository.UpdateAsync(tokenEntity);
+
+        var userDto = new AuthResponseDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = RoleHelper.ToSnakeCaseRole(user.Role),
+            IsActive = user.IsActive
+        };
+
+        return (userDto, newAccessToken, newRefreshToken.Token);
+    }
+
+    public async Task LogoutAsync(string? refreshToken, Guid? userId)
+    {
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            var token = await _refreshTokenRepository.FindByTokenAsync(refreshToken);
+            if (token != null)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+                await _refreshTokenRepository.UpdateAsync(token);
+                return;
+            }
+        }
+
+        if (userId.HasValue)
+        {
+            await _refreshTokenRepository.RevokeAllUserTokensAsync(userId.Value);
+        }
     }
 
     public async Task<MeResponseDto> GetMeAsync(Guid userId)
@@ -117,7 +177,7 @@ public class AuthService : IAuthService
             ?? throw new InvalidOperationException("JWT Secret is not configured");
         var issuer = _configuration["Jwt:Issuer"] ?? "WarehouseWebApi";
         var audience = _configuration["Jwt:Audience"] ?? "WarehouseWebApi";
-        var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationInMinutes"] ?? "60");
+        var expirationMinutes = int.Parse(_configuration["Jwt:ExpirationInMinutes"] ?? "15");
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -143,4 +203,26 @@ public class AuthService : IAuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    private async Task<RefreshToken> GenerateAndSaveRefreshTokenAsync(Guid userId)
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        var tokenString = Convert.ToBase64String(randomBytes);
+
+        var days = int.Parse(_configuration["Jwt:RefreshTokenExpirationInDays"] ?? "7");
+
+        var token = new RefreshToken
+        {
+            UserId = userId,
+            Token = tokenString,
+            ExpiresAt = DateTime.UtcNow.AddDays(days),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _refreshTokenRepository.AddAsync(token);
+        return token;
+    }
 }
+

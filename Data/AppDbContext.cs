@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<DailyStockReport> DailyStockReports => Set<DailyStockReport>();
     public DbSet<DailyStockReportItem> DailyStockReportItems => Set<DailyStockReportItem>();
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,8 +44,27 @@ public class AppDbContext : DbContext
         ConfigureDailyStockReports(modelBuilder);
         ConfigureDailyStockReportItems(modelBuilder);
         ConfigureNotificationLogs(modelBuilder);
+        ConfigureRefreshToken(modelBuilder);
 
         modelBuilder.ApplySoftDeleteQueryFilter();
+    }
+
+    private static void ConfigureRefreshToken(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("refresh_tokens");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Token)
+                  .IsUnique()
+                  .HasFilter("[DeletedAt] IS NULL");
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(256);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     private static void ConfigureJobExecutionLogs(ModelBuilder modelBuilder)
